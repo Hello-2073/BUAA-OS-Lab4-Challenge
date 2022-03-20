@@ -107,7 +107,7 @@ lp_Print(void (*output)(void *, char *, int),
 		fmt++;
 		prec = 0;
 		while (IsDigit(*fmt)) {
-			prec = 10 * prec + Ctod(*fmt);
+			prec = 10 * prec + Ctod(*fmt++);
 		}
 	}
 	/* check format flag */
