@@ -91,19 +91,13 @@ lp_Print(void (*output)(void *, char *, int),
 	ladjust = 0;
 	padc = ' ';
 	/* check for length */
-	/*while (*fmt == '-' || *fmt == '0') {
+	while (*fmt == '-' || *fmt == '0') {
 		if (*fmt == '-') {
 			ladjust = 1;	
 		} else {
 			padc = '0';
 		}
 		fmt++;
-	}*/
-	if (*fmt == '-') {
-		ladjust = 1;
-	}
-	if (*fmt == '0') {
-		padc = '0';
 	}
 	/* check for other prefixes */
 	while (IsDigit(*fmt)) {
