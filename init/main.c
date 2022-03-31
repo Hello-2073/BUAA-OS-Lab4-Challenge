@@ -15,7 +15,9 @@
 int main()
 {
 	printf("main.c:\tmain is start ...\n");
-
+	printf("test begin -----------------");
+	
+	printf("test end -------------------");
 	mips_init();
 	panic("main is over is error!");
 
