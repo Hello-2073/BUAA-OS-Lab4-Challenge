@@ -88,23 +88,29 @@ static void *alloc(u_int n, u_int align, int clear)
    then create it.*/
 static Pte *boot_pgdir_walk(Pde *pgdir, u_long va, int create)
 {
-
 	Pde *pgdir_entryp;
 	Pte *pgtable, *pgtable_entry;
 
 	/* Step 1: Get the corresponding page directory entry and page table. */
 	/* Hint: Use KADDR and PTE_ADDR to get the page table from page directory
 	 * entry value. */
-
+	pgdir_entryp = pgdir + PDX(va);
 
 	/* Step 2: If the corresponding page table is not exist and parameter `create`
 	 * is set, create one. And set the correct permission bits for this new page
 	 * table. */
-
+	if (((*pgdir_entryp) & PTE_V) == 0) {
+		if (create) {
+			*pgdir_entryp = PADDR(alloc(BY2PG, BY2PG, 1));
+			*pgdir_entryp |= PTE_V | PTE_R; 
+		} else return 0;
+	} 
+	pgtable = (Pte *)KADDR(PTE_ADDR(*pgdir_entryp));
 
 	/* Step 3: Get the page table entry for `va`, and return it. */
-
-
+	pgtable_entry = pgtable + PTX(va);
+	//printf("pmap.c: boot_pgdir_walk() successed!\n");	
+	return pgtable_entry; 
 }
 
 /* Exercise 2.7 */
@@ -121,12 +127,16 @@ void boot_map_segment(Pde *pgdir, u_long va, u_long size, u_long pa, int perm)
 	Pte *pgtable_entry;
 
 	/* Step 1: Check if `size` is a multiple of BY2PG. */
-
+	size = ROUND(size, BY2PG);
 
 	/* Step 2: Map virtual address space to physical address. */
 	/* Hint: Use `boot_pgdir_walk` to get the page table entry of virtual address `va`. */
-
-
+	for (i = 0; i < size; i += BY2PG) {
+		va_temp = va + i;
+		pgtable_entry = (Pte *)boot_pgdir_walk(pgdir, va_temp, 1);
+		*pgtable_entry = PTE_ADDR(pa) | perm | PTE_V;
+	}
+	// printf("pmap.c: boot_map_segment() sucessed!\n");
 }
 
 /* Overview:
@@ -230,10 +240,10 @@ int page_alloc(struct Page **pp)
 }
 
 /* Exercise 2.5 */
-/*Overview:
+/*Overview: 
   Release a page, mark it as free if it's `pp_ref` reaches 0.
-Hint:
-When you free a page, just insert it to the page_free_list.*/
+Hint: 
+When you free a page, just insert it to the page_free_list. */
 void page_free(struct Page *pp)
 {
 	/* Step 1: If there's still virtual address referring to this page, do nothing. */
@@ -245,8 +255,8 @@ void page_free(struct Page *pp)
 		return;
 	}
 	
-	/* If the value of `pp_ref` is less than 0, some error must occurr before,
-	 * so PANIC !!! */
+	/* If the value of `pp_ref` is less than 0, some error must occurr before, 
+	 *so PANIC !!! */
 	panic("cgh:pp->pp_ref is less than zero\n");
 }
 
@@ -274,16 +284,28 @@ int pgdir_walk(Pde *pgdir, u_long va, int create, Pte **ppte)
 	struct Page *ppage;
 
 	/* Step 1: Get the corresponding page directory entry and page table. */
-
+	pgdir_entryp = pgdir + PDX(va);
 
 	/* Step 2: If the corresponding page table is not exist(valid) and parameter `create`
 	 * is set, create one. And set the correct permission bits for this new page table.
 	 * When creating new page table, maybe out of memory. */
-
+	if (((*pgdir_entryp) & PTE_V) == 0) {
+		if (create) {
+			if(page_alloc(&ppage) == -E_NO_MEM) {
+				return -E_NO_MEM;
+			}
+			*pgdir_entryp = page2pa(ppage);
+			*pgdir_entryp |= PTE_V | PTE_R;
+			ppage->pp_ref++;
+		} else {
+			*ppte = 0;
+			return 0;
+		}
+	}
+	pgtable = (Pte *)KADDR(PTE_ADDR(*pgdir_entryp));
 
 	/* Step 3: Set the page table entry to `*ppte` as return value. */
-
-
+	*ppte = pgtable + PTX(va);
 	return 0;
 }
 
@@ -295,7 +317,6 @@ int pgdir_walk(Pde *pgdir, u_long va, int create, Pte **ppte)
   Post-Condition:
   Return 0 on success
   Return -E_NO_MEM, if page table couldn't be allocated
-
 Hint:
 If there is already a page mapped at `va`, call page_remove() to release this mapping.
 The `pp_ref` should be incremented if the insertion succeeds.*/
@@ -317,22 +338,23 @@ int page_insert(Pde *pgdir, struct Page *pp, u_long va, u_int perm)
 			return 0;
 		}
 	}
-
+	
 	/* Step 2: Update TLB. */
-
 	/* hint: use tlb_invalidate function */
+	tlb_invalidate(pgdir, va);
 
-
-	/* Step 3: Do check, re-get page table entry to validate the insertion. */
-
-	/* Step 3.1 Check if the page can be insert, if can’t return -E_NO_MEM */
+	/* Step 3: Do check, re-get page table entry to validate the insertion. */	
+	/* Step 3.1 Check if the page can be insert, if can't return -E_NO_MEM */
+	if (pgdir_walk(pgdir, va, 1, &pgtable_entry) != 0) return -E_NO_MEM;
 
 	/* Step 3.2 Insert page and increment the pp_ref */
+	*pgtable_entry = page2pa(pp) | PERM; 
+	pp->pp_ref++;
 
 	return 0;
 }
 
-/*Overview:
+/*Overvie
   Look up the Page that virtual address `va` map to.
 
   Post-Condition:
@@ -418,7 +440,8 @@ void physical_memory_manage_check(void)
 	struct Page *pp, *pp0, *pp1, *pp2;
 	struct Page_list fl;
 	int *temp;
-	
+
+
 	// should be able to allocate three pages
 	pp0 = pp1 = pp2 = 0;
 	assert(page_alloc(&pp0) == 0);
@@ -512,7 +535,9 @@ void page_check(void)
 {
 	struct Page *pp, *pp0, *pp1, *pp2;
 	struct Page_list fl;
-
+	
+	// printf("pmap.c: page_check() begins\n");
+	
 	// should be able to allocate three pages
 	pp0 = pp1 = pp2 = 0;
 	assert(page_alloc(&pp0) == 0);
@@ -538,7 +563,6 @@ void page_check(void)
 	page_free(pp0);
 	assert(page_insert(boot_pgdir, pp1, 0x0, 0) == 0);
 	assert(PTE_ADDR(boot_pgdir[0]) == page2pa(pp0));
-
 	printf("va2pa(boot_pgdir, 0x0) is %x\n",va2pa(boot_pgdir, 0x0));
 	printf("page2pa(pp1) is %x\n",page2pa(pp1));
 
