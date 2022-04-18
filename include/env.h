@@ -6,7 +6,7 @@
 #include "types.h"
 #include "queue.h"
 #include "trap.h"
-#include "mmu.h" 
+#include "mmu.h"
 
 #define LOG2NENV	10
 #define NENV		(1<<LOG2NENV)
