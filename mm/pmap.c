@@ -202,6 +202,9 @@ void page_init(void) {
 	/* Step 4: Mark the other memory as free. */
 	for (; page2ppn(pp) < npage; pp++) {
 		pp->pp_ref = 0;
+		if (page2kva(pp) == TIMESTACK) {
+			continue;
+		}
 		LIST_INSERT_HEAD(&page_free_list, pp, pp_link);
 	}
 }

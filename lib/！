@@ -159,7 +159,8 @@ env_init(void)
 static int
 env_setup_vm(struct Env *e)
 {
-	int r;
+
+    int r;
     struct Page *p = NULL;
     Pde *pgdir;
 
@@ -216,6 +217,7 @@ env_setup_vm(struct Env *e)
 int
 env_alloc(struct Env **new, u_int parent_id)
 {
+    int r;
     struct Env *e;
 
     /* Step 1: Get a new Env from env_free_list*/
@@ -266,7 +268,7 @@ env_alloc(struct Env **new, u_int parent_id)
 static int load_icode_mapper(u_long va, u_int32_t sgsize,
                              u_char *bin, u_int32_t bin_size, void *user_data)
 {
-	struct Env *env = (struct Env *)user_data;
+    struct Env *env = (struct Env *)user_data;
     struct Page *p = NULL;
     u_long i;
     int r, size;
@@ -279,7 +281,6 @@ static int load_icode_mapper(u_long va, u_int32_t sgsize,
 			if ((r = page_alloc(&p)) != 0) {
 				return r;
 			}
-			page_insert(env->env_pgdir, p, va, PTE_R);
 		}
 		size = MIN(bin_size , BY2PG - offset);
 		bcopy((void *)bin, (void *)(page2kva(p) + offset), size);
@@ -290,21 +291,20 @@ static int load_icode_mapper(u_long va, u_int32_t sgsize,
 		if ((r = page_alloc(&p)) != 0) {
 			return r;
 		}
-		page_insert(env->env_pgdir, p, va + i, PTE_R);
+		page_insert(env->env_pgdir, p, va + i - offset, PTE_R);
 		size = MIN(BY2PG, bin_size - i);
 		bcopy((void *)bin + i, (void *)(page2kva(p)), size);
-		i += size;
+		i += BY2PG;
     }
 	offset = va + i - ROUNDDOWN(va + i, BY2PG);
 	if (offset) {
-		if ((p = page_lookup(env->env_pgdir, va + i, NULL)) == 0) {
+		if ((p = page_lookup(env->env_pgdir, va, NULL)) == 0) {
 			if ((r = page_alloc(&p)) != 0) {
 				return r;
 			}
-			page_insert(env->env_pgdir, p, va + i, PTE_R);
 		}
 		size = MIN(sgsize - i, BY2PG - offset);
-		bzero((void *)(page2kva(p) + offset), size);
+		bcopy();
 		i += size;
 	}
     /* Step 2: alloc pages to reach `sgsize` when `bin_size` < `sgsize`.
@@ -313,9 +313,9 @@ static int load_icode_mapper(u_long va, u_int32_t sgsize,
 		if ((r = page_alloc(&p)) != 0) {
 			return r;
 		}
-		page_insert(env->env_pgdir, p, va + i, PTE_R);
-    	size = MIN(BY2PG, sgsize - i);
-		bzero((void *)page2kva(p), size);
+		page_insert(env->pgdir, p, va + i, PTE_R);
+    	size = MIN(BY2PG, sgsize - i)
+		bzero(va + i - offset);
 		i += size;
 	}
     return 0;
@@ -355,9 +355,7 @@ load_icode(struct Env *e, u_char *binary, u_int size)
     /* Step 2: Use appropriate perm to set initial stack for new Env. */
     /* Hint: Should the user-stack be writable? */
 	perm = PTE_R;
-	if (page_insert(e->env_pgdir, p, USTACKTOP - BY2PG, perm) != 0) {
-		return;
-	}
+	if (page_insert(e->env_pgdir, p, USTACKTOP - BY2PG, perm);
 
     /* Step 3: load the binary using elf loader. */
 	load_elf(binary, size, &entry_point, (void *)e, load_icode_mapper);
@@ -390,7 +388,7 @@ env_create_priority(u_char *binary, int size, int priority)
     /* Step 3: Use load_icode() to load the named elf binary,
        and insert it into env_sched_list using LIST_INSERT_HEAD. */
 	load_icode(e, binary, size);
-	LIST_INSERT_HEAD(&env_sched_list[0], e, env_sched_link);
+	LIST_INSERT_HEAD(&env_sched_list, e, env_sched_link);
 }
 /* Overview:
  * Allocate a new env with default priority value.
@@ -493,9 +491,9 @@ env_run(struct Env *e)
      *   you should switch the context and save the registers. 
      *   You can imitate env_destroy() 's behaviors.*/
 	if (curenv) {
-		struct Trapframe *old;
-		old = (struct Trapframe *)(TIMESTACK - sizeof(struct Trapframe));
-		bcopy(old, &(curenv->env_tf),sizeof(struct Trapframe));
+		struct TrapFrame *old;
+		old = (struct TrapFrame *)(TIMESTACK - sizeof(struct TrapFrame));
+		bcopy(old, &(curenv->env_tf),sizeof(struct TrapFrame));
 		curenv->env_tf.pc = curenv->env_tf.cp0_epc;
 	}
 	
@@ -604,7 +602,7 @@ void load_icode_check() {
     /* text & data: 0x00401030 - 0x00409aac left closed and right open interval */
     assert(pgdir_walk(e->env_pgdir, 0x00401000, 0, &pte) == 0);
     assert(*((int *)KADDR(PTE_ADDR(*pte)) + 0xc) == 0x8fa40000);
-	assert(*((int *)KADDR(PTE_ADDR(*pte)) + 1023) == 0x26300001);
+    assert(*((int *)KADDR(PTE_ADDR(*pte)) + 1023) == 0x26300001);
     assert(pgdir_walk(e->env_pgdir, 0x00402000, 0, &pte) == 0);
     assert(*((int *)KADDR(PTE_ADDR(*pte))) == 0x10800004);
     assert(*((int *)KADDR(PTE_ADDR(*pte)) + 1023) == 0x00801821);
