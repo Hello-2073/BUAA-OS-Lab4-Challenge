@@ -166,7 +166,7 @@ env_setup_vm(struct Env *e)
     /* Step 1: Allocate a page for the page directory
      *   using a function you completed in the lab2 and add its pp_ref.
      *   pgdir is the page directory of Env e, assign value for it. */
-    if (page_alloc(&p) != 0) {
+    if ((r = page_alloc(&p)) != 0) {
         panic("env_setup_vm - page alloc error\n");
         return r;
     }
