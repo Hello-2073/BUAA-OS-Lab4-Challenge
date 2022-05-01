@@ -156,9 +156,7 @@ env_init(void)
  *  DO NOT map anything into the user portion of the env's virtual address space.
  */
 /*** exercise 3.4 ***/
-static int
-env_setup_vm(struct Env *e)
-{
+static int env_setup_vm(struct Env *e) {
 	int r;
     struct Page *p = NULL;
     Pde *pgdir;
@@ -213,9 +211,7 @@ env_setup_vm(struct Env *e)
  *      (the value of PC should NOT be set in env_alloc)
  */
 /*** exercise 3.5 ***/
-int
-env_alloc(struct Env **new, u_int parent_id)
-{
+int env_alloc(struct Env **new, u_int parent_id) {
     struct Env *e;
 
     /* Step 1: Get a new Env from env_free_list*/
@@ -264,8 +260,7 @@ env_alloc(struct Env **new, u_int parent_id)
  */
 /*** exercise 3.6 ***/
 static int load_icode_mapper(u_long va, u_int32_t sgsize,
-                             u_char *bin, u_int32_t bin_size, void *user_data)
-{
+                             u_char *bin, u_int32_t bin_size, void *user_data) {
 	struct Env *env = (struct Env *)user_data;
     struct Page *p = NULL;
     u_long i;
@@ -333,9 +328,7 @@ static int load_icode_mapper(u_long va, u_int32_t sgsize,
  *      page_alloc, page_insert, page2kva , e->env_pgdir and load_elf.
  */
 /*** exercise 3.7 ***/
-static void
-load_icode(struct Env *e, u_char *binary, u_int size)
-{
+static void load_icode(struct Env *e, u_char *binary, u_int size) {
     /* Hint:
      *  You must figure out which permissions you'll need
      *  for the different mappings you create.
@@ -376,9 +369,7 @@ load_icode(struct Env *e, u_char *binary, u_int size)
  *  this function wraps the env_alloc and load_icode function.
  */
 /*** exercise 3.8 ***/
-void
-env_create_priority(u_char *binary, int size, int priority)
-{
+void env_create_priority(u_char *binary, int size, int priority) {
     struct Env *e;
     /* Step 1: Use env_alloc to alloc a new env. */
 	if (env_alloc(&e, 0) != 0) {
@@ -392,6 +383,7 @@ env_create_priority(u_char *binary, int size, int priority)
 	load_icode(e, binary, size);
 	LIST_INSERT_HEAD(&env_sched_list[0], e, env_sched_link);
 }
+
 /* Overview:
  * Allocate a new env with default priority value.
  *
@@ -399,9 +391,7 @@ env_create_priority(u_char *binary, int size, int priority)
  *  this function calls the env_create_priority function.
  */
 /*** exercise 3.8 ***/
-void
-env_create(u_char *binary, int size)
-{
+void env_create(u_char *binary, int size) {
      /* Step 1: Use env_create_priority to alloc a new env with priority 1 */
 	env_create_priority(binary, size, 1);
 }
@@ -409,9 +399,7 @@ env_create(u_char *binary, int size)
 /* Overview:
  *  Free env e and all memory it uses.
  */
-void
-env_free(struct Env *e)
-{
+void env_free(struct Env *e) {
     Pte *pt;
     u_int pdeno, pteno, pa;
 
@@ -452,9 +440,7 @@ env_free(struct Env *e)
 /* Overview:
  *  Free env e, and schedule to run a new env if e is the current env.
  */
-void
-env_destroy(struct Env *e)
-{
+void env_destroy(struct Env *e) {
     /* Hint: free e. */
     env_free(e);
 
@@ -485,9 +471,7 @@ extern void lcontext(u_int contxt);
  *      env_pop_tf , lcontext.
  */
 /*** exercise 3.10 ***/
-void
-env_run(struct Env *e)
-{
+void env_run(struct Env *e) {
     /* Step 1: save register state of curenv. */
     /* Hint: if there is an environment running, 
      *   you should switch the context and save the registers. 
@@ -514,8 +498,7 @@ env_run(struct Env *e)
 	env_pop_tf(&(e->env_tf), GET_ENV_ASID(e->env_id));
 }
 
-void env_check()
-{
+void env_check() {
     struct Env *temp, *pe, *pe0, *pe1, *pe2;
     struct Env_list fl;
     int re = 0;

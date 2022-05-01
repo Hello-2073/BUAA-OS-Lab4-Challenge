@@ -17,8 +17,8 @@
 	.text
 LEAF(set_timer)
 
-	li t0, 0xc8
-	sb t0, 0xb5000100
+	li t0, 0xc8						// write 0xc8 to 0xb5000100
+	sb t0, 0xb5000100				// 0x100 is frequency
 	sw	sp, KERNEL_SP
 setup_c0_status STATUS_CU0|0x1001 0
 	jr ra

@@ -12,11 +12,14 @@
  *  3. CANNOT use `return` statement!
  */
 /*** exercise 3.15 ***/
-void sched_yield(void)
-{
-    static int count = 0; // remaining time slices of current env
+/*void sched_yield(void) {
+	env_run(LIST_FIRST(env_sched_list));
+}
+*/
+void sched_yield(void) {
+	static int count = 0; // remaining time slices of current env
     static int point = 0; // current env_sched_list index
-    
+    struct Env *e;
     /*  hint:
      *  1. if (count==0), insert `e` into `env_sched_list[1-point]`
      *     using LIST_REMOVE and LIST_INSERT_TAIL.
@@ -29,4 +32,21 @@ void sched_yield(void)
      *  functions or macros below may be used (not all):
      *  LIST_INSERT_TAIL, LIST_REMOVE, LIST_FIRST, LIST_EMPTY
      */
+	e = curenv;
+	if (count == 0) {
+		LIST_REMOVE(e, env_sched_link);
+		LIST_INSERT_TAIL(&env_sched_list[1 - point], e, env_sched_link);
+	
+		if (LIST_EMPTY(&env_sched_list[point]))	{
+			point = 1 - point;
+		}
+		LIST_FOREACH(e, &env_sched_list[point], env_sched_link) {
+			if (e->env_status == ENV_RUNNABLE) {
+				break;
+			}
+		}		
+		count = e->env_pri;
+	}
+	count--;
+	env_run(e);
 }
