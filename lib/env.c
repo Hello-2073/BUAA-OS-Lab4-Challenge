@@ -177,17 +177,16 @@ static int env_setup_vm(struct Env *e) {
 	bzero(pgdir, PDX(UTOP) * sizeof(Pde));
 
     /* Step 3: Copy kernel's boot_pgdir to pgdir. */
-
     /* Hint:
      *  The VA space of all envs is identical above UTOP
      *  (except at UVPT, which we've set below).
      *  See ./include/mmu.h for layout.
      *  Can you use boot_pgdir as a template?
      */
-	bcopy(boot_pgdir + PDX(UTOP), pgdir + PDX(UTOP), (PTE2PT - PDX(UTOP)) * sizeof(Pde));
+	bcopy(&boot_pgdir[PDX(UTOP)], &pgdir[PDX(UTOP)], (PTE2PT - PDX(UTOP)) * sizeof(Pde));
 
     /* UVPT maps the env's own page table, with read-only permission.*/
-    e->env_pgdir[PDX(UVPT)] = e->env_cr3 | PTE_V;
+	e->env_pgdir[PDX(UVPT)] = e->env_cr3 | PTE_V;
     return 0;
 }
 
@@ -375,13 +374,14 @@ void env_create_priority(u_char *binary, int size, int priority) {
 	if (env_alloc(&e, 0) != 0) {
 		return;
 	}
+
     /* Step 2: assign priority to the new env. */
 	e->env_pri = priority;
 
     /* Step 3: Use load_icode() to load the named elf binary,
        and insert it into env_sched_list using LIST_INSERT_HEAD. */
 	load_icode(e, binary, size);
-	LIST_INSERT_HEAD(&env_sched_list[0], e, env_sched_link);
+	LIST_INSERT_HEAD(env_sched_list, e, env_sched_link);
 }
 
 /* Overview:
@@ -485,7 +485,7 @@ void env_run(struct Env *e) {
 	
     /* Step 2: Set 'curenv' to the new environment. */
 	curenv = e;
-
+	
     /* Step 3: Use lcontext() to switch to its address space. */
 	lcontext(e->env_pgdir);
 

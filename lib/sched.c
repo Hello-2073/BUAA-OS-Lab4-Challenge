@@ -12,10 +12,6 @@
  *  3. CANNOT use `return` statement!
  */
 /*** exercise 3.15 ***/
-// void sched_yield(void) {
-// 	  env_run(LIST_FIRST(env_sched_list));
-// }
-
 void sched_yield(void) {
 	static int count = 0; // remaining time slices of current env
     static int point = 0; // current env_sched_list index
@@ -35,19 +31,22 @@ void sched_yield(void) {
 	e = curenv;
 	if (count == 0 || e == NULL) {
 		if (e != NULL) {
-			// LIST_REMOVE(e, env_sched_link);
+			LIST_REMOVE(e, env_sched_link);
 			LIST_INSERT_TAIL(&env_sched_list[1 - point], e, env_sched_link);
 		}
-		if (LIST_EMPTY(&env_sched_list[point]))	{
-			point = 1 - point;
-		}
-		LIST_FOREACH(e, &env_sched_list[point], env_sched_link) {
-			if (e->env_status == ENV_RUNNABLE) {
-				count = e->env_pri;
-				LIST_REMOVE(e, env_sched_link);
-				break;
+		do {
+			if (LIST_EMPTY(&env_sched_list[point]))	{
+				point = 1 - point;
 			}
-		}
+			LIST_FOREACH(e, &env_sched_list[point], env_sched_link) {
+				if (e->env_status == ENV_RUNNABLE) {
+					count = e->env_pri;
+					break;
+				}
+				LIST_REMOVE(e, env_sched_link);
+				LIST_INSERT_TAIL(&env_sched_list[1 - point], e, env_sched_link);
+			}
+		} while(e == NULL);
 	}
 	count--;
 	env_run(e);

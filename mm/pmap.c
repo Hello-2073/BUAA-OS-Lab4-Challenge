@@ -372,15 +372,11 @@ struct Page *page_lookup(Pde *pgdir, u_long va, Pte **ppte)
 	pgdir_walk(pgdir, va, 0, &pte);
 
 	/* Hint: Check if the page table entry doesn't exist or is not valid. */
-	if (pte == 0) {
-		return 0;
-	}
-	if ((*pte & PTE_V) == 0) {
+	if (pte == 0 || (*pte & PTE_V) == 0) {
 		return 0;    //the page is not in memory.
 	}
 
 	/* Step 2: Get the corresponding Page struct. */
-
 	/* Hint: Use function `pa2page`, defined in include/pmap.h . */
 	ppage = pa2page(*pte);
 	if (ppte) {
@@ -406,7 +402,6 @@ void page_remove(Pde *pgdir, u_long va)
 	struct Page *ppage;
 
 	/* Step 1: Get the page table entry, and check if the page table entry is valid. */
-
 	ppage = page_lookup(pgdir, va, &pagetable_entry);
 
 	if (ppage == 0) {
@@ -414,7 +409,6 @@ void page_remove(Pde *pgdir, u_long va)
 	}
 
 	/* Step 2: Decrease `pp_ref` and decide if it's necessary to free this page. */
-
 	/* Hint: When there's no virtual address mapped to this page, release it. */
 	ppage->pp_ref--;
 	if (ppage->pp_ref == 0) {
