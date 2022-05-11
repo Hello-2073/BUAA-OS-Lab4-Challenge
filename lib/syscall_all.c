@@ -64,6 +64,10 @@ u_int sys_getenvid(void)
 /*** exercise 4.6 ***/
 void sys_yield(void)
 {
+	bcopy((void *)KERNEL_SP - sizeof(struct TrapFrame),
+		  (void *)TIMESTACK - sizeof(struct TrapFrame),
+		  sizeof(struct TrapFrame));	
+	sched_yield();
 }
 
 /* Overview:
@@ -113,6 +117,11 @@ int sys_set_pgfault_handler(int sysno, u_int envid, u_int func, u_int xstacktop)
 	struct Env *env;
 	int ret;
 
+	ret = envid2en(envid, &env, 1);
+	if (ret < 0) return ret;
+
+	env->env_pgfault_handler = func;
+	env->env_xstacktop = xstacktop;
 
 	return 0;
 	//	panic("sys_set_pgfault_handler not implemented");
@@ -142,8 +151,21 @@ int sys_mem_alloc(int sysno, u_int envid, u_int va, u_int perm)
 	struct Env *env;
 	struct Page *ppage;
 	int ret;
-	ret = 0;
 
+	if (va >= UTOP) 	 return -E_INVAL;
+	if (!(perm & PTE_V)) return -E_INVAL;
+	if (perm & PTE_COW)  return -E_INVAL;
+
+	ret = envid2env(envid, &env, 1);
+	if (ret < 0) return ret;
+	
+	ret = page_alloc(&ppage);
+	if (ret < 0) return ret;
+	
+	ret = page_insert(env->env_pgdir, ppage, va, perm);
+	if (ret < 0) return ret;
+
+	return 0;
 }
 
 /* Overview:
@@ -160,8 +182,8 @@ int sys_mem_alloc(int sysno, u_int envid, u_int va, u_int perm)
  * 	Cannot access pages above UTOP.
  */
 /*** exercise 4.4 ***/
-int sys_mem_map(int sysno, u_int srcid, u_int srcva, u_int dstid, u_int dstva,
-				u_int perm)
+int sys_mem_map(int sysno, u_int srcid, u_int srcva, 
+				u_int dstid, u_int dstva, u_int perm)
 {
 	int ret;
 	u_int round_srcva, round_dstva;
@@ -176,8 +198,25 @@ int sys_mem_map(int sysno, u_int srcid, u_int srcva, u_int dstid, u_int dstva,
 	round_dstva = ROUNDDOWN(dstva, BY2PG);
 
     //your code here
+	if (srcva >= UTOP || dstva >= UTOP) return -E_INVAL;
+	if (!(perm & PTE_V)) return -E_INVAL;
+	if (perm & PTE_COW)  return -E_INVAL;
 
-	return ret;
+	ret = envid2env(srcid, &srcenv, 1);
+	if (ret < 0) return ret;	
+	
+	ret = envid2env(dstid, &dstenv, 1);
+	if (ret < 0) return ret;
+
+	ppage = page_lookup(srcenv->env_pgdir, round_srcva, &ppte);
+	if (ppage == NULL) return -E_INVAL;
+
+	if (!((*ppte) & PTE_R) && (perm & PTE_R)) return -E_INVAL;
+
+	ret = page_insert(dstenv_pgdir, ppage, round_dstva, perm);
+	if (ret < 0) return ret;
+
+	return 0;
 }
 
 /* Overview:
@@ -196,7 +235,14 @@ int sys_mem_unmap(int sysno, u_int envid, u_int va)
 	int ret;
 	struct Env *env;
 
-	return ret;
+	if (va >= UTOP) return -E_INVAL;
+
+	ret = envid2env(envid, &env, 1);
+	if (ret < 0) return ret;
+	
+	page_remove(env->env_pgdir, va);
+
+	return 0;
 	//	panic("sys_mem_unmap not implemented");
 }
 
@@ -219,6 +265,15 @@ int sys_env_alloc(void)
 	int r;
 	struct Env *e;
 
+	r = env_alloc(&e, curenv->id);
+	if (r < 0) return r;
+	
+	e->env_tf = *(struct TrapFrame *)(KERNEL_SP - sizeof(struct TrapFrame));
+	e->env_tf.pc = curenv->env_tf.cp0_epc;
+	e->env_tf.regs[2] = 0;	//  set $v0 as 0
+
+	e->env_status = ENV_NOT_RUNNABLE;
+	e->env_pri = curenv->pri;
 
 	return e->env_id;
 	//	panic("sys_env_alloc not implemented");
@@ -242,6 +297,23 @@ int sys_set_env_status(int sysno, u_int envid, u_int status)
 	// Your code here.
 	struct Env *env;
 	int ret;
+
+	if (status != ENV_RUNNABLE && 
+		status != ENV_NOT_RUNNABLE &&
+		status != ENV_FREE) {
+		return -E_INVAL;
+	}
+
+	ret = envid2env(envid, &env, 1);
+	if (ret < 0) return ret;
+
+	if (status == ENV_RUNNABLE) {
+		env->env_status = ENV_RUNNABLE;
+	} else if (status == ENV_NOT_RUNNABLE) {
+		env->status = ENV_NOT_RUNNABLE;
+	} else if (status == ENV_FREE) {
+		env_destroy(env);
+	}
 
 	return 0;
 	//	panic("sys_env_set_status not implemented");
@@ -296,6 +368,13 @@ void sys_panic(int sysno, char *msg)
 /*** exercise 4.7 ***/
 void sys_ipc_recv(int sysno, u_int dstva)
 {
+	if (dstva >= UTOP) return;
+
+	curenv->env_ipc_receiving = 1;
+	curenv->env_ipc_dstva = dstva;
+	curenv_status = ENV_NOT_RUNNABLLE;
+
+	sys_yield();
 }
 
 /* Overview:

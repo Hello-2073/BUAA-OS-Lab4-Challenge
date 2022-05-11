@@ -85,14 +85,23 @@ pgfault(u_int va)
 	u_int *tmp;
 	//	writef("fork.c:pgfault():\t va:%x\n",va);
 
+	if (!(((Pte *)(*vpt))[VPN(va)] & PTE_COW)) {
+		user_panic("pgfault(): copy-on-write page!");
+	}
+	
+	va = ROUNDDOWN(va, BY2PG);
+	tmp = USTACKTOP;
 	//map the new page at a temporary place
+	syscall_mem_alloc(0, tmp. PTE_V | PTE_R);
 
 	//copy the content
+	user_bcopy(va, tmp, BY2PG);
 
 	//map the page on the appropriate place
+	syscall_mem_map(0, tmp, 0, va, PTE_V | PTE_R);
 
 	//unmap the temporary place
-
+	syscall_mem_unmap(0, tmp);
 }
 
 /* Overview:
@@ -112,12 +121,29 @@ pgfault(u_int va)
  * should process it correctly.
  */
 /*** exercise 4.10 ***/
-static void
-duppage(u_int envid, u_int pn)
+static void duppage(u_int envid, u_int pn)
 {
-	u_int addr;
-	u_int perm;
+	u_int addr = pn << PGSHIFT;
+	u_int perm = ((Pte *)(*vpt))[pn] & 0xfff;
+	
+	int ret;
 
+	if (!(perm & PTE_R)) {
+		
+	} else if (perm & PTE_COW) {
+		ret = syscall_mem_map(0, addr. envid, addr, perm);
+		if (ret < 0) {
+		}
+	} else if (perm & PTE_LIBRARY) {
+		ret = sysvall_mem_map(0, addr, envid, addr, perm);
+		if (ret < 0) {
+		}
+	} else {
+		ret = syscall_mem_map(0, addr, envid, addr, perm);
+		if (ret < 0) {
+		}
+	}
+	
 	//	user_panic("duppage not implemented");
 }
 
@@ -132,8 +158,8 @@ duppage(u_int envid, u_int pn)
  */
 /*** exercise 4.9 4.15***/
 extern void __asm_pgfault_handler(void);
-int
-fork(void)
+
+int fork(void)
 {
 	// Your code here.
 	u_int newenvid;
@@ -141,11 +167,16 @@ fork(void)
 	extern struct Env *env;
 	u_int i;
 
-
 	//The parent installs pgfault using set_pgfault_handler
+	set_pagefault_handler();
 
 	//alloc a new alloc
-
+	newenvid = syscall_env_alloc();
+	if (newemvid  == 0) {
+		env = envs + ENVX(syscall_getenvid());
+		return 0	
+	}
+	env = envs + ENVX(newenvid);
 
 	return newenvid;
 }
