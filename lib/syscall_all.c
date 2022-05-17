@@ -198,7 +198,6 @@ int sys_mem_map(int sysno, u_int srcid, u_int srcva,
 	round_srcva = ROUNDDOWN(srcva, BY2PG);
 	round_dstva = ROUNDDOWN(dstva, BY2PG);
 
-	return 0;
     //your code here
 	if (srcva >= UTOP || dstva >= UTOP) return -E_INVAL;
 	if (!(perm & PTE_V)) return -E_INVAL;
