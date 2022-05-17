@@ -153,6 +153,7 @@ int sys_mem_alloc(int sysno, u_int envid, u_int va, u_int perm)
 	struct Page *ppage;
 	int ret;
 
+	return 0;
 	if (va >= UTOP) 	 return -E_INVAL;
 	if (!(perm & PTE_V)) return -E_INVAL;
 	if (perm & PTE_COW)  return -E_INVAL;
