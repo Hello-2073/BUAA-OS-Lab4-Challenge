@@ -231,6 +231,7 @@ int sys_mem_map(int sysno, u_int srcid, u_int srcva,
 /*** exercise 4.5 ***/
 int sys_mem_unmap(int sysno, u_int envid, u_int va)
 {
+	return 0;
 	// Your code here.
 	int ret;
 	struct Env *env;
