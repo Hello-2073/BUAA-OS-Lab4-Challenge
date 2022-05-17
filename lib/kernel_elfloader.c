@@ -73,8 +73,7 @@ int load_elf(u_char *binary, int size, u_long *entry_point, void *user_data,
         if (phdr->p_type == PT_LOAD) {
 		/* Your task here!  */
         /* Real map all section at correct virtual address.Return < 0 if error. */
-        /* Hint: Call the callback function you have achieved before. */
-	
+        /* Hint: Call the callback function you have achieved before. */	
 			if ((r = map(phdr->p_vaddr, phdr->p_memsz, binary + phdr->p_offset, phdr->p_filesz, user_data)) != 0) {
 				return r;
 			}

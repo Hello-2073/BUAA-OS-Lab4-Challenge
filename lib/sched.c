@@ -28,6 +28,8 @@ void sched_yield(void) {
      *  functions or macros below may be used (not all):
      *  LIST_INSERT_TAIL, LIST_REMOVE, LIST_FIRST, LIST_EMPTY
      */
+
+	printf("sched_yield()\n");
 	e = curenv;
 	if (count == 0 || e == NULL) {
 		if (e != NULL) {
