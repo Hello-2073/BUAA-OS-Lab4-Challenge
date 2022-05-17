@@ -64,7 +64,6 @@ u_int sys_getenvid(void)
 /*** exercise 4.6 ***/
 void sys_yield(void)
 {
-	printf("sys_yield() is called\n");
 	bcopy((void *)KERNEL_SP - sizeof(struct Trapframe),
 		  (void *)TIMESTACK - sizeof(struct Trapframe),
 		  sizeof(struct Trapframe));	
@@ -269,12 +268,11 @@ int sys_env_alloc(void)
 	r = env_alloc(&e, curenv->env_id);
 	if (r < 0) return r;
 	
-	e->env_tf = *(struct Trapframe *)(KERNEL_SP - sizeof(struct Trapframe));
-	e->env_tf.pc = curenv->env_tf.cp0_epc;
-	e->env_tf.regs[2] = 0;	//  set $v0 as 0
-
 	e->env_status = ENV_NOT_RUNNABLE;
 	e->env_pri = curenv->env_pri;
+	bcopy((void *)KERNEL_SP - sizeof(struct Trapframe), (void *)&(e->env_tf), sizeof(struct Trapframe));
+	e->env_tf.pc = e->env_tf.cp0_epc;
+	e->env_tf.regs[2] = 0;
 
 	return e->env_id;
 	//	panic("sys_env_alloc not implemented");

@@ -29,9 +29,8 @@ void sched_yield(void) {
      *  LIST_INSERT_TAIL, LIST_REMOVE, LIST_FIRST, LIST_EMPTY
      */
 
-	printf("sched_yield()\n");
 	e = curenv;
-	if (count == 0 || e == NULL) {
+	if (count == 0 || e == NULL || e->env_status == ENV_NOT_RUNNABLE) {
 		if (e != NULL) {
 			LIST_REMOVE(e, env_sched_link);
 			LIST_INSERT_TAIL(&env_sched_list[1 - point], e, env_sched_link);

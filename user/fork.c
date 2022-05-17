@@ -169,9 +169,8 @@ int fork(void)
 		env = envs + ENVX(syscall_getenvid());
 		return 0;	
 	}
-	env = envs + ENVX(newenvid);
 
-	for (i = 0; i < UTOP -  2 * BY2PG; i += BY2PG)
+	for (i = 0; i < USTACKTOP; i += BY2PG)
 	{
 		if ((((Pde *)(*vpd))[i >> PDSHIFT] & PTE_V) && (((Pte *)(*vpt))[i >> PGSHIFT] & PTE_V))
 		{
