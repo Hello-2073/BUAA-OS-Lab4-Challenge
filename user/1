@@ -161,7 +161,7 @@ int fork(void)
 	u_int i;
 
 	//The parent installs pgfault using set_pgfault_handler
-	set_pgfault_handler(pgfault);
+	set_pagefault_handler();
 
 	//alloc a new alloc
 	newenvid = syscall_env_alloc();
@@ -180,7 +180,7 @@ int fork(void)
 	}
 
 	syscall_mem_alloc(newenvid, UXSTACKTOP - BY2PG, PTE_V | PTE_R);
-	syscall_set_pgfault_handler(newenvid, __asm_pgfault_handler, UXSTACKTOP);
+	set_pgfault_handler(newenvid, __asm_pgfault_handler, UXSTACKTOP);
 	syscall_set_env_status(newenvid, ENV_RUNNABLE);
 
 	return newenvid;

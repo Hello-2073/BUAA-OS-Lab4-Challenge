@@ -64,9 +64,9 @@ u_int sys_getenvid(void)
 /*** exercise 4.6 ***/
 void sys_yield(void)
 {
-	bcopy((void *)KERNEL_SP - sizeof(struct TrapFrame),
-		  (void *)TIMESTACK - sizeof(struct TrapFrame),
-		  sizeof(struct TrapFrame));	
+	bcopy((void *)KERNEL_SP - sizeof(struct Trapframe),
+		  (void *)TIMESTACK - sizeof(struct Trapframe),
+		  sizeof(struct Trapframe));	
 	sched_yield();
 }
 
@@ -117,7 +117,7 @@ int sys_set_pgfault_handler(int sysno, u_int envid, u_int func, u_int xstacktop)
 	struct Env *env;
 	int ret;
 
-	ret = envid2en(envid, &env, 1);
+	ret = envid2env(envid, &env, 1);
 	if (ret < 0) return ret;
 
 	env->env_pgfault_handler = func;
@@ -213,7 +213,7 @@ int sys_mem_map(int sysno, u_int srcid, u_int srcva,
 
 	if (!((*ppte) & PTE_R) && (perm & PTE_R)) return -E_INVAL;
 
-	ret = page_insert(dstenv_pgdir, ppage, round_dstva, perm);
+	ret = page_insert(dstenv->env_pgdir, ppage, round_dstva, perm);
 	if (ret < 0) return ret;
 
 	return 0;
@@ -265,15 +265,15 @@ int sys_env_alloc(void)
 	int r;
 	struct Env *e;
 
-	r = env_alloc(&e, curenv->id);
+	r = env_alloc(&e, curenv->env_id);
 	if (r < 0) return r;
 	
-	e->env_tf = *(struct TrapFrame *)(KERNEL_SP - sizeof(struct TrapFrame));
+	e->env_tf = *(struct Trapframe *)(KERNEL_SP - sizeof(struct Trapframe));
 	e->env_tf.pc = curenv->env_tf.cp0_epc;
 	e->env_tf.regs[2] = 0;	//  set $v0 as 0
 
 	e->env_status = ENV_NOT_RUNNABLE;
-	e->env_pri = curenv->pri;
+	e->env_pri = curenv->env_pri;
 
 	return e->env_id;
 	//	panic("sys_env_alloc not implemented");
@@ -310,7 +310,7 @@ int sys_set_env_status(int sysno, u_int envid, u_int status)
 	if (status == ENV_RUNNABLE) {
 		env->env_status = ENV_RUNNABLE;
 	} else if (status == ENV_NOT_RUNNABLE) {
-		env->status = ENV_NOT_RUNNABLE;
+		env->env_status = ENV_NOT_RUNNABLE;
 	} else if (status == ENV_FREE) {
 		env_destroy(env);
 	}
@@ -368,11 +368,11 @@ void sys_panic(int sysno, char *msg)
 /*** exercise 4.7 ***/
 void sys_ipc_recv(int sysno, u_int dstva)
 {
-	if (dstva >= UTOP) return;
+	if (dstva != NULL && dstva >= UTOP) return;
 
-	curenv->env_ipc_receiving = 1;
+	curenv->env_ipc_recving = 1;
 	curenv->env_ipc_dstva = dstva;
-	curenv_status = ENV_NOT_RUNNABLLE;
+	curenv->env_status = ENV_NOT_RUNNABLE;
 
 	sys_yield();
 }
