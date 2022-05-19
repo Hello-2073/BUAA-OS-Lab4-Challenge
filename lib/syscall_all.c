@@ -90,7 +90,7 @@ int sys_env_destroy(int sysno, u_int envid)
 	int r;
 	struct Env *e;
 
-	if ((r = envid2env(envid, &e, 1)) < 0) {
+	if ((r = envid2env(envid, &e, 0)) < 0) {
 		return r;
 	}
 
@@ -154,7 +154,7 @@ int sys_mem_alloc(int sysno, u_int envid, u_int va, u_int perm)
 
 	if (va >= UTOP) 	 return -E_INVAL;
 	if (!(perm & PTE_V)) return -E_INVAL;
-	if (perm & PTE_COW)  return -E_INVAL;
+	// if (perm & PTE_COW)  return -E_INVAL;
 
 	ret = envid2env(envid, &env, 0);
 	if (ret < 0) return ret;
@@ -271,6 +271,7 @@ int sys_env_alloc(void)
 	e->env_status = ENV_NOT_RUNNABLE;
 	e->env_pri = curenv->env_pri;
 	bcopy((void *)KERNEL_SP - sizeof(struct Trapframe), (void *)&(e->env_tf), sizeof(struct Trapframe));
+	printf("assign epc %x to pc %x\n", e->env_tf.cp0_epc, e->env_tf.pc);
 	e->env_tf.pc = e->env_tf.cp0_epc;
 	e->env_tf.regs[2] = 0;
 
@@ -303,7 +304,7 @@ int sys_set_env_status(int sysno, u_int envid, u_int status)
 		return -E_INVAL;
 	}
 
-	ret = envid2env(envid, &env, 1);
+	ret = envid2env(envid, &env, 0);
 	if (ret < 0) return ret;
 
 	if (status == ENV_RUNNABLE) {

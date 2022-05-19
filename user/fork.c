@@ -83,7 +83,7 @@ static void
 pgfault(u_int va)
 {
 	u_int *tmp;
-	//	writef("fork.c:pgfault():\t va:%x\n",va);
+	writef("fork.c:pgfault():\t va:%x\n",va);
 
 	if (!(((Pte *)(*vpt))[VPN(va)] & PTE_COW)) {
 		user_panic("pgfault(): copy-on-write page!");
@@ -126,11 +126,7 @@ static void duppage(u_int envid, u_int pn)
 	u_int addr = pn << PGSHIFT;
 	u_int perm = ((Pte *)(*vpt))[pn] & 0xfff;
 
-	if (!(perm & PTE_R)) {
-		syscall_mem_map(0, addr, envid, addr, perm);		
-	} else if (perm & PTE_COW) {
-		syscall_mem_map(0, addr, envid, addr, perm);
-	} else if (perm & PTE_LIBRARY) {
+	if (!(perm & PTE_R) || perm & PTE_COW || perm & PTE_LIBRARY) {
 		syscall_mem_map(0, addr, envid, addr, perm);
 	} else {
 		syscall_mem_map(0, addr, envid, addr, perm | PTE_COW);
@@ -181,7 +177,6 @@ int fork(void)
 	syscall_mem_alloc(newenvid, UXSTACKTOP - BY2PG, PTE_V | PTE_R);
 	syscall_set_pgfault_handler(newenvid, __asm_pgfault_handler, UXSTACKTOP);
 	syscall_set_env_status(newenvid, ENV_RUNNABLE);
-
 	return newenvid;
 }
 

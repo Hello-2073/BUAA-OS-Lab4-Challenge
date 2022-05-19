@@ -17,20 +17,21 @@ LEAF(env_pop_tf)
 		//1:	j	1b
 	nop
 		move		k0,a0
-		mtc0	a1,CP0_ENTRYHI
+		mtc0	a1, CP0_ENTRYHI
 
 
-		mfc0	t0,CP0_STATUS
-		ori	t0,0x3
-		xori	t0,0x3
-		mtc0	t0,CP0_STATUS
+		mfc0	t0, CP0_STATUS
+		ori		t0, 0x3
+		xori	t0, 0x3
+		mtc0	t0, CP0_STATUS
 
-		lw	v1,TF_LO(k0)
+		lw		v1, TF_LO(k0)
 		mtlo	v1
-		lw	v0,TF_HI(k0)
-		lw	v1,TF_EPC(k0)
+		lw		v0, TF_HI(k0)
+		lw		v1, TF_EPC(k0)
 		mthi	v0
-		mtc0	v1,CP0_EPC
+		mtc0	v1, CP0_EPC
+
 		lw	$31,TF_REG31(k0)
 		lw	$30,TF_REG30(k0)
 		lw	$29,TF_REG29(k0)

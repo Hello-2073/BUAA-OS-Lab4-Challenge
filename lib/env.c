@@ -157,7 +157,7 @@ env_init(void)
  */
 /*** exercise 3.4 ***/
 static int env_setup_vm(struct Env *e) {
-	int r;
+	int i, r;
     struct Page *p = NULL;
     Pde *pgdir;
 
@@ -174,8 +174,9 @@ static int env_setup_vm(struct Env *e) {
 	e->env_cr3 = PADDR(pgdir);
 
     /* Step 2: Zero pgdir's field before UTOP. */
-	bzero(pgdir, PDX(UTOP) * sizeof(Pde));
-
+	for (i = 0; i < PDX(UTOP); i++) {
+		pgdir[i] = 0;
+	}
     /* Step 3: Copy kernel's boot_pgdir to pgdir. */
     /* Hint:
      *  The VA space of all envs is identical above UTOP
@@ -183,7 +184,9 @@ static int env_setup_vm(struct Env *e) {
      *  See ./include/mmu.h for layout.
      *  Can you use boot_pgdir as a template?
      */
-	bcopy(&boot_pgdir[PDX(UTOP)], &pgdir[PDX(UTOP)], (PTE2PT - PDX(UTOP)) * sizeof(Pde));
+	for (i = PDX(UTOP); i < PTE2PT; i++) {
+		pgdir[i] = boot_pgdir[i];
+	}
 
     /* UVPT maps the env's own page table, with read-only permission.*/
 	e->env_pgdir[PDX(UVPT)] = e->env_cr3 | PTE_V;
@@ -492,13 +495,16 @@ void env_run(struct Env *e) {
 	
     /* Step 3: Use lcontext() to switch to its address space. */
 	lcontext(e->env_pgdir);
-
+	
     /* Step 4: Use env_pop_tf() to restore the environment's
      *   environment   registers and return to user mode.
      *
      * Hint: You should use GET_ENV_ASID there. Think why?
      *   (read <see mips run linux>, page 135-144)
      */
+
+	printf("&&&&&&&&& %d begin\n", e->env_id);
+	printf("&&&&&&&&& %x pc\n", e->env_tf.pc);
 	env_pop_tf(&(e->env_tf), GET_ENV_ASID(e->env_id));
 }
 
