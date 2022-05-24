@@ -388,7 +388,6 @@ void env_create_priority(u_char *binary, int size, int priority)
        and insert it into env_sched_list using LIST_INSERT_HEAD. */
 	load_icode(e, binary, size);
 
-	printf("env_create_priority() is over\n");
 }
 
 /* Overview:
@@ -503,8 +502,8 @@ void env_run(struct Env *e) {
      *   (read <see mips run linux>, page 135-144)
      */
 
-	printf("&&&&&&&&& %d begin\n", e->env_id);
-	printf("&&&&&&&&& %x pc\n", e->env_tf.pc);
+	// printf("&&&&&&&&& %d begin\n", e->env_id);
+	// printf("&&&&&&&&& %x pc\n", e->env_tf.pc);
 	env_pop_tf(&(e->env_tf), GET_ENV_ASID(e->env_id));
 }
 

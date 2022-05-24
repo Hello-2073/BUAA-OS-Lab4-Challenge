@@ -30,7 +30,7 @@ void sched_yield(void) {
      */
 
 	e = curenv;
-	if (e != NULL) printf("@@@@@@@@@@@@ %d yield\n", e->env_id);
+	// if (e != NULL) printf("@@@@@@@@@@@@ %d yield\n", e->env_id);
 	if (count == 0 || e == NULL || e->env_status == ENV_NOT_RUNNABLE) {
 		if (e != NULL) {
 			LIST_REMOVE(e, env_sched_link);
@@ -50,7 +50,7 @@ void sched_yield(void) {
 			}
 		} while(e == NULL);
 	}
-	printf("@@@@@@@@@@@@ %d run\n", e->env_id);
+	// printf("@@@@@@@@@@@@ %d run\n", e->env_id);
 	count--;
 	env_run(e);
 }

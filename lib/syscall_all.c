@@ -271,7 +271,6 @@ int sys_env_alloc(void)
 	e->env_status = ENV_NOT_RUNNABLE;
 	e->env_pri = curenv->env_pri;
 	bcopy((void *)KERNEL_SP - sizeof(struct Trapframe), (void *)&(e->env_tf), sizeof(struct Trapframe));
-	printf("assign epc %x to pc %x\n", e->env_tf.cp0_epc, e->env_tf.pc);
 	e->env_tf.pc = e->env_tf.cp0_epc;
 	e->env_tf.regs[2] = 0;
 
