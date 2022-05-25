@@ -27,8 +27,8 @@ void mips_detect_memory()
 {
 	/* Step 1: Initialize basemem.
 	 * (When use real computer, CMOS tells us how many kilobytes there are). */
-	maxpa = 0x4000000;
 	basemem = 0x4000000;
+	maxpa = 0x4000000;
 	extmem = 0x0;
 	/* Step 2: Calculate corresponding npage value. */
 	npage = maxpa >> PGSHIFT;
@@ -132,8 +132,7 @@ void boot_map_segment(Pde *pgdir, u_long va, u_long size, u_long pa, int perm)
 	/* Step 2: Map virtual address space to physical address. */
 	/* Hint: Use `boot_pgdir_walk` to get the page table entry of virtual address `va`. */
 	for (i = 0; i < size; i += BY2PG) {
-		va_temp = va + i;
-		pgtable_entry = (Pte *)boot_pgdir_walk(pgdir, va_temp, 1);
+		pgtable_entry = (Pte *)boot_pgdir_walk(pgdir, va + i, 1);
 		*pgtable_entry = PTE_ADDR(pa) | perm | PTE_V;
 	}
 	// printf("pmap.c: boot_map_segment() sucessed!\n");
@@ -200,11 +199,12 @@ void page_init(void) {
 	}
 
 	/* Step 4: Mark the other memory as free. */
-	for (; page2ppn(pp) < npage; pp++) {
-		pp->pp_ref = 0;
+	for (pp = &pages[PPN(PADDR(freemem))]; page2ppn(pp) < npage; pp++) {
 		if (page2kva(pp) == TIMESTACK) {
+			pp->pp_ref = 1;
 			continue;
 		}
+		pp->pp_ref = 0;
 		LIST_INSERT_HEAD(&page_free_list, pp, pp_link);
 	}
 }

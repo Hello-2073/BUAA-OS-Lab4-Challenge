@@ -110,9 +110,11 @@ int envid2env(u_int envid, struct Env **penv, int checkperm)
      *    must be either curenv or an immediate child of curenv.
      *  If not, error! */
     /*  Step 2: Make a check according to checkperm. */
-	if (checkperm && e->env_id != curenv->env_id && e->env_parent_id != curenv->env_id) {
-		*penv = 0;
-		return -E_BAD_ENV;
+	if (checkperm) {
+		if (e != curenv && e->env_parent_id != curenv->env_id) {
+			*penv = 0;
+			return -E_BAD_ENV;
+		}
 	}
 
     *penv = e;
@@ -190,8 +192,8 @@ static int env_setup_vm(struct Env *e) {
     /* UVPT maps the env's own page table, with read-only permission.*/
 	e->env_pgdir = pgdir;
 	e->env_cr3 = PADDR(pgdir);
-	e->env_pgdir[PDX(UVPT)] = e->env_cr3 | PTE_V;
-	e->env_pgdir[PDX(VPT)] = e->env_cr3;
+	e->env_pgdir[PDX(UVPT)] = e->env_cr3 | PTE_V | PTE_R;
+
     return 0;
 }
 
@@ -215,7 +217,8 @@ static int env_setup_vm(struct Env *e) {
  *      (the value of PC should NOT be set in env_alloc)
  */
 /*** exercise 3.5 ***/
-int env_alloc(struct Env **new, u_int parent_id) {
+int env_alloc(struct Env **new, u_int parent_id) 
+{
     struct Env *e;
 
     /* Step 1: Get a new Env from env_free_list*/
@@ -263,6 +266,54 @@ int env_alloc(struct Env **new, u_int parent_id) {
  *   return 0 on success, otherwise < 0.
  */
 /*** exercise 3.6 ***/
+static int load_icode_mapper(u_long va, u_int32_t sgsize,
+                             u_char *bin, u_int32_t bin_size, void *user_data)
+{
+    struct Env *env = (struct Env *)user_data;
+    struct Page *p = NULL;
+    u_long i;
+    int r;
+    u_long offset = va - ROUNDDOWN(va, BY2PG);
+	u_long size = 0;
+
+	if (bin == NULL) return -1;
+    
+    /* Step 1: load all content of bin into memory. */
+	if (offset > 0) {
+		size = BY2PG - offset;
+		if (page_alloc(&p) == -E_NO_MEM) return -E_NO_MEM;
+		//p -> pp_ref++;
+		page_insert(env->env_pgdir, p, va-offset, PTE_R);
+		bcopy((void*)bin,(void*)(page2kva(p) + offset),MIN(size,bin_size));
+	}
+    for (i = size; i < bin_size; i += BY2PG) {
+        /* Hint: You should alloc a new page. */
+	    if (page_alloc(&p) == -E_NO_MEM) return -E_NO_MEM;
+	    //p -> pp_ref++;
+	    page_insert(env->env_pgdir, p, va + i, PTE_R);
+	    bcopy((void*)(bin + i), (void *)(page2kva(p)), MIN(bin_size - i, BY2PG));
+    }
+    /* Step 2: alloc pages to reach `sgsize` when `bin_size` < `sgsize`.
+     * hint: variable `i` has the value of `bin_size` now! */
+    offset = va + i - ROUNDDOWN(va + i, BY2PG);
+    if (offset) {
+	    if (page_alloc(&p) == -E_NO_MEM) return -E_NO_MEM;
+        //p -> pp_ref++;
+	    size = MIN(sgsize - i,BY2PG - offset);
+	    page_insert(env -> env_pgdir,p,va+i,PTE_R);
+	    bzero((void*)(page2kva(p) + offset), size);
+	    i = i + size;
+    }
+    while (i < sgsize) {
+	if( page_alloc(&p) == - E_NO_MEM) return - E_NO_MEM;
+        //p -> pp_ref ++ ;
+        page_insert(env->env_pgdir, p, va + i, PTE_R);
+        i += BY2PG;
+    }
+    return 0;
+}
+
+/*
 static int 
 load_icode_mapper(u_long va, u_int32_t sgsize, 
 	u_char *bin, u_int32_t bin_size, void *user_data)
@@ -276,7 +327,6 @@ load_icode_mapper(u_long va, u_int32_t sgsize,
 
 	if (bin == NULL) return -1;
 
-    /* Step 1: load all content of bin into memory. */
     if (offset > 0) {
 		p = page_lookup(env->env_pgdir, va, NULL);
 		if (p == 0) {
@@ -289,8 +339,7 @@ load_icode_mapper(u_long va, u_int32_t sgsize,
 		bcopy((void *)bin, (void *)(page2kva(p) + offset), size);
 	}
 	for (i = size; i < bin_size; i += BY2PG) {
-        /* Hint: You should alloc a new page. */
-		r = page_alloc(&p);
+ 		r = page_alloc(&p);
 		if (r != 0) return r;
 		page_insert(env->env_pgdir, p, va + i, PTE_R);
 		bcopy((void *)(bin + i), (void *)(page2kva(p)), MIN(BY2PG, bin_size - i));
@@ -307,9 +356,6 @@ load_icode_mapper(u_long va, u_int32_t sgsize,
 		//bzero((void *)(page2kva(p) + offset), size);
 		i += size;
 	}
-
-    /* Step 2: alloc pages to reach `sgsize` when `bin_size` < `sgsize`.
-     * hint: variable `i` has the value of `bin_size` now! */
     while (i < sgsize) {
 		r = page_alloc(&p);
 		if (r != 0) return r;
@@ -318,6 +364,8 @@ load_icode_mapper(u_long va, u_int32_t sgsize,
 	}
     return 0;
 }
+*/
+
 /* Overview:
  *  Sets up the the initial stack and program binary for a user process.
  *  This function loads the complete binary image by using elf loader,
@@ -341,7 +389,7 @@ static void load_icode(struct Env *e, u_char *binary, u_int size) {
     struct Page *p = NULL;
     u_long entry_point;
     u_long r;
-    u_long perm;
+    u_long perm = PTE_R;
 
     /* Step 1: alloc a page. */
 	r = page_alloc(&p);
@@ -349,7 +397,6 @@ static void load_icode(struct Env *e, u_char *binary, u_int size) {
 
     /* Step 2: Use appropriate perm to set initial stack for new Env. */
     /* Hint: Should the user-stack be writable? */
-	perm = PTE_R;
 	if (page_insert(e->env_pgdir, p, USTACKTOP - BY2PG, perm) != 0) {
 		return;
 	}
@@ -385,7 +432,7 @@ void env_create_priority(u_char *binary, int size, int priority)
     /* Step 3: Use load_icode() to load the named elf binary,
        and insert it into env_sched_list using LIST_INSERT_HEAD. */
 	load_icode(e, binary, size);
-	LIST_INSERT_HEAD(env_sched_list, e, env_sched_link);
+	LIST_INSERT_HEAD(&env_sched_list[0], e, env_sched_link);
 }
 
 /* Overview:
@@ -497,7 +544,6 @@ env_run(struct Env *e)
 	
     /* Step 2: Set 'curenv' to the new environment. */
 	curenv = e;
-	e->env_status = ENV_RUNNABLE;
 
     /* Step 3: Use lcontext() to switch to its address space. */
 	lcontext(e->env_pgdir);
