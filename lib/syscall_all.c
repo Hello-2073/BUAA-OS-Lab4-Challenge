@@ -64,8 +64,8 @@ u_int sys_getenvid(void)
 /*** exercise 4.6 ***/
 void sys_yield(void)
 {
-	bcopy((void *)KERNEL_SP - sizeof(struct Trapframe),
-		  (void *)TIMESTACK - sizeof(struct Trapframe),
+	bcopy((void *)(KERNEL_SP - sizeof(struct Trapframe)),
+		  (void *)(TIMESTACK - sizeof(struct Trapframe)),
 		  sizeof(struct Trapframe));	
 	sched_yield();
 }
@@ -154,7 +154,7 @@ int sys_mem_alloc(int sysno, u_int envid, u_int va, u_int perm)
 
 	if (va >= UTOP) 	 return -E_INVAL;
 	if (!(perm & PTE_V)) return -E_INVAL;
-	// if (perm & PTE_COW)  return -E_INVAL;
+	if (perm & PTE_COW)  return -E_INVAL;
 
 	ret = envid2env(envid, &env, 0);
 	if (ret < 0) return ret;
@@ -171,7 +171,7 @@ int sys_mem_alloc(int sysno, u_int envid, u_int va, u_int perm)
 /* Overview:
  * 	Map the page of memory at 'srcva' in srcid's address space
  * at 'dstva' in dstid's address space with permission 'perm'.
- * Perm has the same restrictions as in sys_mem_alloc.
+ * Perm has the same restrictions as in sys_mem_alloc. (Only V is needed)
  * (Probably we should add a restriction that you can't go from
  * non-writable to writable?)
  *
@@ -200,7 +200,6 @@ int sys_mem_map(int sysno, u_int srcid, u_int srcva,
     //your code here
 	if (srcva >= UTOP || dstva >= UTOP) return -E_INVAL;
 	if (!(perm & PTE_V)) return -E_INVAL;
-	if (perm & PTE_COW)  return -E_INVAL;
 
 	ret = envid2env(srcid, &srcenv, 0);
 	if (ret < 0) return ret;	
@@ -270,7 +269,7 @@ int sys_env_alloc(void)
 	
 	e->env_status = ENV_NOT_RUNNABLE;
 	e->env_pri = curenv->env_pri;
-	bcopy((void *)KERNEL_SP - sizeof(struct Trapframe), (void *)&(e->env_tf), sizeof(struct Trapframe));
+	bcopy((void *)(KERNEL_SP - sizeof(struct Trapframe)), (void *)&(e->env_tf), sizeof(struct Trapframe));
 	e->env_tf.pc = e->env_tf.cp0_epc;
 	e->env_tf.regs[2] = 0;
 
@@ -306,10 +305,11 @@ int sys_set_env_status(int sysno, u_int envid, u_int status)
 	ret = envid2env(envid, &env, 0);
 	if (ret < 0) return ret;
 
+	env->env_status = status;
+
 	if (status == ENV_RUNNABLE) {
-		env->env_status = ENV_RUNNABLE;
-	} else if (status == ENV_NOT_RUNNABLE) {
-		env->env_status = ENV_NOT_RUNNABLE;
+		LIST_REMOVE(env, env_sched_link);
+		LIST_INSERT_HEAD(env_sched_list, env, env_sched_link);
 	} else if (status == ENV_FREE) {
 		env_destroy(env);
 	}

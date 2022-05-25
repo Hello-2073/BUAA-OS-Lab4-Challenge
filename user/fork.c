@@ -123,14 +123,24 @@ pgfault(u_int va)
 /*** exercise 4.10 ***/
 static void duppage(u_int envid, u_int pn)
 {
-	u_int addr = pn << PGSHIFT;
-	u_int perm = ((Pte *)(*vpt))[pn] & 0xfff;
+	u_int addr;
+	u_int perm;
+	addr = pn * BY2PG;
+	perm = (*vpt)[pn] & 0xfff;
 
-	if (!(perm & PTE_R) || perm & PTE_COW || perm & PTE_LIBRARY) {
-		syscall_mem_map(0, addr, envid, addr, perm);
-	} else {
-		syscall_mem_map(0, addr, envid, addr, perm | PTE_COW);
-		syscall_mem_map(0, addr, 0, addr, perm | PTE_COW);
+	if (!(perm & PTE_R) || !(perm & PTE_V)) {
+		syscall_mem_map(0,addr,envid,addr,perm);
+	}
+	else if (perm & PTE_LIBRARY) {
+		syscall_mem_map(0,addr,envid,addr,perm);
+	}
+	else if (perm & PTE_COW) {
+		syscall_mem_map(0,addr,envid,addr,perm);
+	}
+	else {
+		perm |= PTE_COW;
+		syscall_mem_map(0,addr,envid,addr,perm);
+		syscall_mem_map(0,addr,0,addr,perm);
 	}
 	
 	//	user_panic("duppage not implemented");
@@ -148,34 +158,42 @@ static void duppage(u_int envid, u_int pn)
 /*** exercise 4.9 4.15***/
 extern void __asm_pgfault_handler(void);
 
-int fork(void)
+int
+fork(void)
 {
 	// Your code here.
 	u_int newenvid;
 	extern struct Env *envs;
 	extern struct Env *env;
 	u_int i;
-
+	u_int parent_id = syscall_getenvid();
 	//The parent installs pgfault using set_pgfault_handler
 	set_pgfault_handler(pgfault);
 
 	//alloc a new alloc
 	newenvid = syscall_env_alloc();
-	if (newenvid  == 0) {
-		env = envs + ENVX(syscall_getenvid());
-		return 0;	
+	u_int envid;
+	if (newenvid == 0) {
+		env = &envs[ENVX(syscall_getenvid())];
+		env -> env_parent_id = parent_id;
+		return 0;
 	}
-
-	for (i = 0; i < USTACKTOP; i += BY2PG)
-	{
-		if ((((Pde *)(*vpd))[i >> PDSHIFT] & PTE_V) && (((Pte *)(*vpt))[i >> PGSHIFT] & PTE_V))
-		{
-			duppage(newenvid, VPN(i));
+	
+	for ( i = 0; i < VPN(USTACKTOP); i++) {
+		if( ((*vpd)[i>>10]) && ((*vpt)[i]) ) {
+			duppage(newenvid,i);
 		}
 	}
 
-	syscall_mem_alloc(newenvid, UXSTACKTOP - BY2PG, PTE_V | PTE_R);
-	syscall_set_pgfault_handler(newenvid, __asm_pgfault_handler, UXSTACKTOP);
+	if (syscall_mem_alloc(newenvid, UXSTACKTOP - BY2PG, PTE_V | PTE_R) < 0) {
+		writef("Error at fork.c/fork. Syscall_mem_alloc for son_env failed\n");
+		return -1;
+	}
+
+	if (syscall_set_pgfault_handler(newenvid, __asm_pgfault_handler, UXSTACKTOP) < 0) {
+		writef("Error at fork.c/fork.  Syscall_set_pgfault_handler for son_env failed");
+		return -1;
+	}
 	syscall_set_env_status(newenvid, ENV_RUNNABLE);
 	return newenvid;
 }
