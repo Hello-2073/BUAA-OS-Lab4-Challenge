@@ -234,6 +234,7 @@ int env_alloc(struct Env **new, u_int parent_id)
 
     /* Step 3: Initialize every field of new Env with appropriate values.*/
 	e->env_id = mkenvid(e);
+	// printf("new env_id %d\n", e->env_id);
 	e->env_status = ENV_RUNNABLE;
 	e->env_parent_id = parent_id;	
 	e->env_runs = 0;
@@ -391,9 +392,10 @@ static void load_icode(struct Env *e, u_char *binary, u_int size) {
     u_long r;
     u_long perm = PTE_R;
 
+	//printf("load_icode() is called\n");
     /* Step 1: alloc a page. */
 	r = page_alloc(&p);
-	if (e != 0)	return;
+	if (r != 0)	return;
 
     /* Step 2: Use appropriate perm to set initial stack for new Env. */
     /* Hint: Should the user-stack be writable? */
@@ -406,6 +408,7 @@ static void load_icode(struct Env *e, u_char *binary, u_int size) {
 	
     /* Step 4: Set CPU's PC register as appropriate value. */
     e->env_tf.pc = entry_point;
+	// printf("~~~~~~~~~~~~~~~~~~~~~~~~~~~~entry point is %d\n", entry_point);
 }
 
 /* Overview:
@@ -420,11 +423,16 @@ static void load_icode(struct Env *e, u_char *binary, u_int size) {
 /*** exercise 3.8 ***/
 void env_create_priority(u_char *binary, int size, int priority)
 {
-    struct Env *e;
+    
+	//printf("env_create_priority() is called\n");
+	struct Env *e;
 	int r;
     /* Step 1: Use env_alloc to alloc a new env. */
 	r = env_alloc(&e, 0);
-	if (r != 0) return;
+	if (r != 0) {
+		//printf("env_create_priority(): no free env!\n");
+		return;
+	}
 
     /* Step 2: assign priority to the new env. */
 	e->env_pri = priority;
@@ -433,6 +441,7 @@ void env_create_priority(u_char *binary, int size, int priority)
        and insert it into env_sched_list using LIST_INSERT_HEAD. */
 	load_icode(e, binary, size);
 	LIST_INSERT_HEAD(&env_sched_list[0], e, env_sched_link);
+	//printf("env_create_priority() finished on success\n");
 }
 
 /* Overview:

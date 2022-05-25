@@ -15,7 +15,7 @@
 void sched_yield(void) {
 	static int count = 0; // remaining time slices of current env
     static int point = 0; // current env_sched_list index
-    struct Env *e = NULL;
+    static struct Env *e = NULL;
     /*  hint:
      *  1. if (count==0), insert `e` into `env_sched_list[1-point]`
      *     using LIST_REMOVE and LIST_INSERT_TAIL.
@@ -28,8 +28,16 @@ void sched_yield(void) {
      *  functions or macros below may be used (not all):
      *  LIST_INSERT_TAIL, LIST_REMOVE, LIST_FIRST, LIST_EMPTY
      */
-	printf("enter sched()\n");
+	// printf("sched_yield() is called.\n");
+	// if (e) {
+	//	printf("sched_yield(): env_id %d has %d to excute\n", curenv->env_id, count);
+	// }
 	if (count == 0 || e == NULL || e->env_status != ENV_RUNNABLE) {
+		// if (e != NULL) {
+		//	printf("sched_yield(): env_id %d, times %d, status %d", e->env_id, count, e->env_status);
+		// } else {
+		//	printf("sched_yield(): first time\n");
+		// }
 		if (e != NULL) {
 			LIST_REMOVE(e, env_sched_link);
 			if (e->env_status != ENV_FREE) {
@@ -37,7 +45,9 @@ void sched_yield(void) {
 			}
 		}
 		while (1) {
-			if (LIST_EMPTY(&env_sched_list[point]))	{
+			// printf("sched_yield(): to find a new env\n");
+			while (LIST_EMPTY(&env_sched_list[point])) {
+				//printf("sched_yield(): sched_list %d is empty\n", point);
 				point = 1 - point;
 			}
 			e = LIST_FIRST(&env_sched_list[point]);
@@ -52,8 +62,12 @@ void sched_yield(void) {
 			}
 		}
 	}
+	// if (e == NULL) {
+	// 	panic("sched_yield(): NULL!\n");
+	// }
 	count--;
 	e->env_runs++;
-	printf("%d is sched\n", e->env_id);
+	// printf("sched_yield(): %d is sched\n", e->env_id);
+	// printf("sched_yield() finished on success\n");
 	env_run(e);
 }

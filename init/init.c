@@ -14,17 +14,17 @@ void mips_init() {
 
 	env_init();
 
-
+printf("+++++++++++++++++++++++++++++++++++++++++\n");
 	// ENV_CREATE_PRIORITY(user_A, 2);
 	// ENV_CREATE_PRIORITY(user_B, 1);
 
-	ENV_CREATE(user_tltest);
-	// ENV_CREATE(user_fktest);
+//	ENV_CREATE(user_tltest);
+	 ENV_CREATE(user_fktest);
 	// ENV_CREATE(user_pingpong);
-
+printf("+++++++++++++++++\n");
 	trap_init();
 	kclock_init();
-		
+		printf("++++++++++++++++++++++++++++\n");
 	while(1);
 	panic("init.c:\tend of mips_init() reached!");
 }
