@@ -46,28 +46,27 @@ FEXPORT(ret_from_exception)
 .set noreorder
 .align	5
 NESTED(handle_int, TF_SIZE, sp)
-.set	noat
+	.set	noat
 
-//1: j 1b
-nop
+	//1: j 1b
+	nop
 
-SAVE_ALL
-CLI
-.set	at
-mfc0	t0, CP0_CAUSE
-mfc0	t2, CP0_STATUS
-and	t0, t2
+	SAVE_ALL
+	CLI
+	.set	at
+	mfc0	t0, CP0_CAUSE
+	mfc0	t2, CP0_STATUS
+	and	t0, t2
 
-andi	t1, t0, STATUSF_IP4
-bnez	t1, timer_irq
-nop
+	andi	t1, t0, STATUSF_IP4
+	bnez	t1, timer_irq
+	nop
 END(handle_int)
 
 	.extern delay
 
 timer_irq:
-
-	sb zero, 0xb5000110
+	// sb 	zero, 0xb5000110
 1:	j	sched_yield
 	nop
 	/*li t1, 0xff

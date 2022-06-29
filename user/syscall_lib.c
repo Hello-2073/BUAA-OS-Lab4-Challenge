@@ -24,9 +24,15 @@ syscall_yield(void)
 
 
 int
-syscall_env_destroy(u_int envid)
+syscall_env_destroy(u_int envid, void *retval)
 {
-	return msyscall(SYS_env_destroy, envid, 0, 0, 0, 0);
+	return msyscall(SYS_env_destroy, envid, retval, 0, 0, 0);
+}
+
+int
+syscall_env_join(u_int envid, void **retval)
+{
+	return msyscall(SYS_env_join, envid, retval, 0, 0, 0);
 }
 
 int

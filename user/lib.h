@@ -46,7 +46,7 @@ extern int msyscall(int, int, int, int, int, int);
 void syscall_putchar(char ch);
 u_int syscall_getenvid(void);
 void syscall_yield(void);
-int syscall_env_destroy(u_int envid);
+int syscall_env_destroy(u_int envid, void *retval);
 int syscall_set_pgfault_handler(u_int envid, void (*func)(void),
 								u_int xstacktop);
 int syscall_mem_alloc(u_int envid, u_int va, u_int perm);
@@ -54,9 +54,9 @@ int syscall_mem_map(u_int srcid, u_int srcva, u_int dstid, u_int dstva,
 					u_int perm);
 int syscall_mem_unmap(u_int envid, u_int va);
 
-inline static int syscall_env_alloc(void)
+inline static int syscall_env_alloc(int alloc_mem)
 {
-    return msyscall(SYS_env_alloc, 0, 0, 0, 0, 0);
+	return msyscall(SYS_env_alloc, alloc_mem, 0, 0, 0, 0);
 }
 
 int syscall_set_env_status(u_int envid, u_int status);
@@ -65,6 +65,7 @@ void syscall_panic(char *msg);
 int syscall_ipc_can_send(u_int envid, u_int value, u_int srcva, u_int perm);
 void syscall_ipc_recv(u_int dstva);
 int syscall_cgetc();
+int syscall_env_join(u_int envid, void **retval);
 
 // string.c
 int strlen(const char *s);

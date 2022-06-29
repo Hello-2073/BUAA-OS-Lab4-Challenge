@@ -70,19 +70,39 @@
  o  UXSTACKTOP -/       |     user exception stack   |     BY2PG                 |
  o                      +----------------------------+------------0x7f3f f000    |
  o                      |       Invalid memory       |     BY2PG                 |
- o      USTACKTOP ----> +----------------------------+------------0x7f3f e000    |
- o                      |     normal user stack      |     BY2PG                 |
+ o      			    +----------------------------+------------0x7f3f e000    |
+ o                      |     normal user stack0     |     BY2PG                 |
  o                      +----------------------------+------------0x7f3f d000    |
- a                      |                            |                           |
- a                      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~                           |
- a                      .                            .                           |
- a                      .                            .                         kuseg
- a                      .                            .                           |
- a                      |~~~~~~~~~~~~~~~~~~~~~~~~~~~~|                           |
- a                      |                            |                           |
- o       UTEXT   -----> +----------------------------+                           |
+ o                      |       Invalid memory       |     BY2PG                 |
+ o      			    +----------------------------+------------0x7f3f c000    |
+ o                      |     normal user stack1	 |     BY2PG 				 |
+ o						+----------------------------+------------0x7f3f b000	 |
+ o                      |       Invalid memory       |     BY2PG                 |
+ o      				+----------------------------+------------0x7f3f a000    |
+ o						|							 |							 |
+ o                      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~                           |
+ o                      .                            .                           |
+ o                      .                            .                           |
+ o                      .                            .                           |
+ o                      |~~~~~~~~~~~~~~~~~~~~~~~~~~~~|                           |
+ o						|							 |							 |
+ o      				+----------------------------+------------0x7f3f 0000    |
+ o                      |     normal user stack7     |     BY2PG                 |
+ o                      +----------------------------+------------0x7f3e f000    |
+ o                      |       Invalid memory       |     BY2PG                 |
+ o      				+----------------------------+------------0x7f3e e000    |
+ o                      |                            |                           |
+ o                      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~                           |
+ o                      .                            .                           |
+ o                      .                            .                         kuseg
+ o                      .                            .                           |
+ o                      |~~~~~~~~~~~~~~~~~~~~~~~~~~~~|                           |
+ o						|							 |							 |
+ o		 UHEAP	 ----->	+----------------------------+------------0x2000 0000	 |
+ o                      |                            |                           |
+ o       UTEXT   -----> +----------------------------+------------0x0080 0000    |
  o                      |                            |     2 * PDMAP            \|/
- a     0 ------------>  +----------------------------+ -----------------------------
+ o     0 ------------>  +----------------------------+ -----------------------------
  o
 */
 
@@ -96,13 +116,15 @@
 #define UVPT (ULIM - PDMAP)
 #define UPAGES (UVPT - PDMAP)
 #define UENVS (UPAGES - PDMAP)
+#define USEMS 0x7ec00000
 
 #define UTOP UENVS
 #define UXSTACKTOP (UTOP)
 #define TIMESTACK 0x82000000
 
 #define USTACKTOP (UTOP - 2*BY2PG)
-#define UTEXT 0x00400000
+#define UHEAP 0x20000000
+#define UTEXT 0x00800000
 
 
 #define E_UNSPECIFIED	1	// Unspecified or unknown problem

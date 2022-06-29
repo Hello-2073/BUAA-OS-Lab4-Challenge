@@ -47,9 +47,7 @@ int is_elf_format(u_char *binary)
 int load_elf(u_char *binary, int size, u_long *entry_point, void *user_data,
 			 int (*map)(u_long va, u_int32_t sgsize,
 						u_char *bin, u_int32_t bin_size, void *user_data))
-{
-	printf("load_elf() begin\n");
-		
+{	
 	Elf32_Ehdr *ehdr = (Elf32_Ehdr *)binary;
 	Elf32_Phdr *phdr = NULL;
 	/* As a loader, we just care about segment,
@@ -64,7 +62,6 @@ int load_elf(u_char *binary, int size, u_long *entry_point, void *user_data,
 	if (size < 4 || !is_elf_format(binary)) {
         return -1;
     }
-	printf("chedk elf successed\n");
 
     ptr_ph_table = binary + ehdr->e_phoff;
     ph_entry_count = ehdr->e_phnum;
@@ -83,7 +80,6 @@ int load_elf(u_char *binary, int size, u_long *entry_point, void *user_data,
          }
          ptr_ph_table += ph_entry_size;
      }
-	 printf("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^entry point is %d\n", ehdr->e_entry);
      *entry_point = ehdr->e_entry;
      return 0;
 }

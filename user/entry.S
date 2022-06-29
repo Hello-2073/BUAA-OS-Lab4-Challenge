@@ -7,8 +7,8 @@
 
 	.p2align 12
 
-	.globl fsipcbuf
-fsipcbuf:
+	.globl ipcbuf
+ipcbuf:
 	.space BY2PG
 	.globl fdtab
 fdtab:

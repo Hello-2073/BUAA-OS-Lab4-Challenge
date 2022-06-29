@@ -3,10 +3,10 @@
 #include <env.h>
 
 void
-exit(void)
+exit(void *retval)
 {
 	//close_all();
-	syscall_env_destroy(0);
+	syscall_env_destroy(0, retval);
 }
 
 
@@ -25,6 +25,6 @@ libmain(int argc, char **argv)
 	// call user main routine
 	umain(argc, argv);
 	// exit gracefully
-	exit();
+	exit(NULL);
 	//syscall_env_destroy(0);
 }

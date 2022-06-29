@@ -55,6 +55,26 @@ u_int sys_getenvid(void)
 	return curenv->env_id;
 }
 
+int sys_env_join(int sysno, u_int envid, void **retval)
+{	
+	struct Env *e;
+	int r;
+	
+	r = envid2env(envid, &e, 0);
+	if (r < 0) {
+		// printf("%d is over\n\n", envid);
+		return r;
+	}
+
+	e->env_joint_id = curenv->env_id;
+	e->env_retval = retval;
+
+	curenv->env_status = ENV_JOINT;
+	curenv->env_tf.regs[2] = 0;	
+
+	return 0;
+}
+
 /* Overview:
  *	This function enables the current process to give up CPU.
  *
@@ -67,6 +87,7 @@ void sys_yield(void)
 	bcopy((void *)KERNEL_SP - sizeof(struct Trapframe),
 		  (void *)TIMESTACK - sizeof(struct Trapframe),
 		  sizeof(struct Trapframe));	
+	// printf("herer\n\n");
 	sched_yield();
 }
 
@@ -81,7 +102,7 @@ void sys_yield(void)
  * Post-Condition:
  * 	Return 0 on success, < 0 when error occurs.
  */
-int sys_env_destroy(int sysno, u_int envid)
+int sys_env_destroy(int sysno, u_int envid, void *retval)
 {
 	/*
 		printf("[%08x] exiting gracefully\n", curenv->env_id);
@@ -94,8 +115,8 @@ int sys_env_destroy(int sysno, u_int envid)
 		return r;
 	}
 
-	printf("[%08x] destroying %08x\n", curenv->env_id, e->env_id);
-	env_destroy(e);
+	// printf("[%08x] destroying %08x\n", curenv->env_id, e->env_id);
+	env_destroy(e, retval);
 	return 0;
 }
 
@@ -113,7 +134,6 @@ int sys_env_destroy(int sysno, u_int envid)
 /*** exercise 4.12 ***/
 int sys_set_pgfault_handler(int sysno, u_int envid, u_int func, u_int xstacktop)
 {
-	// Your code here.
 	struct Env *env;
 	int ret;
 	ret = envid2env(envid, &env, 0);
@@ -123,7 +143,6 @@ int sys_set_pgfault_handler(int sysno, u_int envid, u_int func, u_int xstacktop)
 	env->env_xstacktop = xstacktop;
 
 	return 0;
-	//	panic("sys_set_pgfault_handler not implemented");
 }
 
 /* Overview:
@@ -257,24 +276,29 @@ int sys_mem_unmap(int sysno, u_int envid, u_int va)
  * 	Returns envid of new environment, or < 0 on error.
  */
 /*** exercise 4.8 ***/
-int sys_env_alloc(void)
+int sys_env_alloc(int sysno, int alloc_mem)
 {
-	// Your code here.
 	int r;
 	struct Env *e;
 
-	r = env_alloc(&e, curenv->env_id);
+	u_int sp;
+
+	r = env_alloc(&e, curenv->env_id, alloc_mem);
 	if (r < 0) return r;
 	
 	e->env_status = ENV_NOT_RUNNABLE;
 	e->env_pri = curenv->env_pri;
+
+	sp = e->env_tf.regs[29];
 	bcopy((void *)KERNEL_SP - sizeof(struct Trapframe), 
 		  (void *)&(e->env_tf), sizeof(struct Trapframe));
+	e->env_tf.regs[29] = sp;
 	e->env_tf.pc = e->env_tf.cp0_epc;
 	e->env_tf.regs[2] = 0;
 
+	// printf("+++0x%x\n\n", e->env_tf.regs[29]);
+
 	return e->env_id;
-	//	panic("sys_env_alloc not implemented");
 }
 
 /* Overview:
@@ -292,7 +316,6 @@ int sys_env_alloc(void)
 /*** exercise 4.14 ***/
 int sys_set_env_status(int sysno, u_int envid, u_int status)
 {
-	// Your code here.
 	struct Env *env;
 	int ret;
 
@@ -303,13 +326,16 @@ int sys_set_env_status(int sysno, u_int envid, u_int status)
 	ret = envid2env(envid, &env, 0);
 	if (ret < 0) return ret;
 
+	if (env->env_status == ENV_JOINT && curenv->env_joint_id != env->env_id) {
+		return -1;
+	}
+	
 	if (status == ENV_RUNNABLE && env->env_status != ENV_RUNNABLE) {
 		LIST_INSERT_TAIL(&env_sched_list[0], env, env_sched_link);
 	}
 	env->env_status = status;
 
 	return 0;
-	//	panic("sys_env_set_status not implemented");
 }
 
 /* Overview:

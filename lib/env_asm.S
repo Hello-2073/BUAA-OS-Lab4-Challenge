@@ -7,16 +7,14 @@
 KERNEL_SP:
 			.word		0
 
-
-
 		.text
 		.set noreorder
 	//	.set noat
 LEAF(env_pop_tf)
 .set	mips1
 		//1:	j	1b
-	nop
-		move		k0,a0
+		nop
+		move		k0, a0
 		mtc0	a1, CP0_ENTRYHI
 
 
@@ -62,13 +60,11 @@ LEAF(env_pop_tf)
 		lw	$2,TF_REG2(k0)
 		lw	$1,TF_REG1(k0)
 
-		lw	k1,TF_PC(k0)
+		lw	k1, TF_PC(k0)
 
-		lw	k0,TF_STATUS(k0)
+		lw	k0, TF_STATUS(k0)
 		nop
-		mtc0	k0,CP0_STATUS
-
-
+		mtc0	k0, CP0_STATUS
 
 		j	k1
 		rfe
@@ -79,9 +75,8 @@ END(env_pop_tf)
 
 LEAF(lcontext)
 		.extern	mCONTEXT
-		sw		a0,mCONTEXT
+		sw	a0, mCONTEXT
 		jr	ra
 		nop
 END(lcontext)
-
 

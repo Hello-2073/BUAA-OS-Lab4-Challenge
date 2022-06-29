@@ -3,8 +3,6 @@
 #include <asm/asm.h>
 #include <kclock.h>
 
-
-
 .macro	setup_c0_status set clr
 	.set	push
 	mfc0	t0, CP0_STATUS

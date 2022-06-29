@@ -30,17 +30,19 @@ void sched_yield(void) {
      */
 	// printf("sched_yield() is called.\n");
 	// if (e) {
-	//	printf("sched_yield(): env_id %d has %d to excute\n", curenv->env_id, count);
+	//	 printf("sched_yield(): env_id %d has %d to excute, pc 0x%x\n", e->env_id, count, e->env_tf.pc);
 	// }
-	if (count == 0 || e == NULL || e->env_status != ENV_RUNNABLE) {
+	// e = curenv;
+	if (count <= 0 || e == NULL || e->env_status != ENV_RUNNABLE) {
 		// if (e != NULL) {
 		//	printf("sched_yield(): env_id %d, times %d, status %d", e->env_id, count, e->env_status);
 		// } else {
-		//	printf("sched_yield(): first time\n");
+		// 	printf("sched_yield(): first time\n");
 		// }
 		if (e != NULL) {
 			LIST_REMOVE(e, env_sched_link);
 			if (e->env_status != ENV_FREE) {
+				// printf("sched_yield(): env %b waiting\n", e->env_stack_map);
 				LIST_INSERT_TAIL(&env_sched_list[1 - point], e, env_sched_link);
 			}
 		}
@@ -51,7 +53,8 @@ void sched_yield(void) {
 				point = 1 - point;
 			}
 			e = LIST_FIRST(&env_sched_list[point]);
-			if (e->env_status == ENV_RUNNABLE) {
+			// printf("sched_yield(): id %d, status is %d\n", e->env_id, e->env_status);
+			if (e->env_status == ENV_RUNNABLE) {	
 				count = e->env_pri;
 				break;
 			} else if (e->env_status == ENV_FREE) {

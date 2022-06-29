@@ -17,6 +17,7 @@
 #define ENV_FREE	0
 #define ENV_RUNNABLE		1
 #define ENV_NOT_RUNNABLE	2
+#define ENV_JOINT 			3
 
 struct Env {
 	struct Trapframe env_tf;        // Saved registers
@@ -24,24 +25,32 @@ struct Env {
 	u_int env_id;                   // Unique environment identifier
 	u_int env_parent_id;            // env_id of this env's parent
 	u_int env_status;               // Status of the environment
-	Pde  *env_pgdir;                // Kernel virtual address of page dir
+	Pde *env_pgdir;                // Kernel virtual address of page dir
 	u_int env_cr3;
 	LIST_ENTRY(Env) env_sched_link;
-        u_int env_pri;
-	// Lab 4 IPC
+    u_int env_pri;
+
+	// Lab 4 IPC : 20 B
 	u_int env_ipc_value;            // data value sent to us 
 	u_int env_ipc_from;             // envid of the sender  
 	u_int env_ipc_recving;          // env is blocked receiving
-	u_int env_ipc_dstva;		// va at which to map received page
-	u_int env_ipc_perm;		// perm of page mapping received
+	u_int env_ipc_dstva;			// va at which to map received page
+	u_int env_ipc_perm;				// perm of page mapping received
 
-	// Lab 4 fault handling
+	// Lab 4 fault handling : 8 B
 	u_int env_pgfault_handler;      // page fault state
 	u_int env_xstacktop;            // top of exception stack
 
 	// Lab 6 scheduler counts
-	u_int env_runs;			// number of times been env_run'ed
-	u_int env_nop;                  // align to avoid mul instruction
+	u_int env_runs;				// number of times been env_run'ed
+	//u_int env_nop;                // align to avoid mul instruction
+
+	// challange
+	u_int env_tid;
+	u_int env_stack_map;
+	u_int env_joint_id;
+	void **env_retval;
+	LIST_ENTRY(Env) env_waiting_link;
 };
 
 LIST_HEAD(Env_list, Env);
@@ -50,11 +59,11 @@ extern struct Env *curenv;	        // the current env
 extern struct Env_list env_sched_list[2]; // runnable env list
 
 void env_init(void);
-int env_alloc(struct Env **e, u_int parent_id);
+int env_alloc(struct Env **e, u_int parent_id, int alloc_mem);
 void env_free(struct Env *);
 void env_create_priority(u_char *binary, int size, int priority);
 void env_create(u_char *binary, int size);
-void env_destroy(struct Env *e);
+void env_destroy(struct Env *e, void *retval);
 
 int envid2env(u_int envid, struct Env **penv, int checkperm);
 void env_run(struct Env *e);
