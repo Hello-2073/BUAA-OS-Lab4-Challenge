@@ -1,0 +1,248 @@
+/OSLAB/gxemul -E testmips -C R3000 -M 64 gxemul/vmlinux
+GXemul 0.4.6    Copyright (C) 2003-2007  Anders Gavare
+Read the source code and/or documentation for other Copyright messages.
+
+Simple setup...
+    net: simulating 10.0.0.0/8 (max outgoing: TCP=100, UDP=100)
+        simulated gateway: 10.0.0.254 (60:50:40:30:20:10)
+            using nameserver 202.112.128.51, domain "s."
+    machine "default":
+        memory: 64 MB
+        cpu0: R3000 (I+D = 4+4 KB)
+        machine: MIPS test machine
+        loading gxemul/vmlinux
+        starting cpu0 at 0x80010000
+-------------------------------------------------------------------------------
+
+main.c:	main is start ...
+
+init.c:	mips_init() is called
+
+Physical memory: 65536K available, base = 65536K, extended = 0K
+
+to memory 80401000 for struct page directory.
+
+to memory 80431000 for struct Pages.
+
+pmap.c:	 mips vm init success
+
+pageout:	@@@___0x7f3fe000___@@@  ins a page 
+
+pageout:	@@@___0x407090___@@@  ins a page 
+
+---------------- semaphore test begin ------------------pageout:	@@@___0x7f3fc000___@@@  ins a page 
+
+pageout:	@@@___0x7f3fe000___@@@  ins a page 
+
+pageout:	@@@___0x407010___@@@  ins a page 
+
+sem_serve begin
+
+sem_serve init success
+
+a new semm id 128, value 1
+
+a new semm id 129, value 1
+
+a new semm id 130, value 1
+
+a new semm id 131, value 0
+
+pageout:	@@@___0x7f3fbff8___@@@  ins a page 
+
+pageout:	@@@___0x7f3fa000___@@@  ins a page 
+
+pageout:	@@@___0x7f3f9ff8___@@@  ins a page 
+
+pageout:	@@@___0x7f3f8000___@@@  ins a page 
+
+pageout:	@@@___0x7f3f7ff8___@@@  ins a page 
+
+pageout:	@@@___0x7f3f6000___@@@  ins a page 
+
+[writer1] writes [01] to buf.
+
+[writer1] writes [11] to buf.
+
+[writer1] writes [21] to buf.
+
+[writer1] writes [31] to buf.
+
+[writer1] writes [41] to buf.
+
+[reader2] reads [41] from buf.
+
+[reader3] reads [41] from buf.
+
+[reader2] reads [41] from buf.
+
+[reader2] reads [41] from buf.
+
+[reader2] reads [41] from buf.
+
+[reader2] reads [41] from buf.
+
+[reader2] reads [41] from buf.
+
+[writer1] writes [51] to buf.
+
+[writer1] writes [61] to buf.
+
+[writer1] writes [71] to buf.
+
+[writer1] writes [81] to buf.
+
+[writer1] writes [91] to buf.
+
+[reader2] reads [91] from buf.
+
+[reader2] reads [91] from buf.
+
+[reader2] reads [91] from buf.
+
+[reader2] reads [91] from buf.
+
+[reader2] reads [91] from buf.
+
+[reader2] reads [91] from buf.
+
+[reader2] reads [91] from buf.
+
+[reader2] reads [91] from buf.
+
+[reader2] reads [91] from buf.
+
+[reader2] reads [91] from buf.
+
+[reader3] reads [91] from buf.
+
+[reader2] reads [91] from buf.
+
+[reader2] reads [91] from buf.
+
+[reader2] reads [91] from buf.
+
+[reader2] reads [91] from buf.
+
+[reader2] reads [91] from buf.
+
+[reader2] reads [91] from buf.
+
+[reader2] reads [91] from buf.
+
+[reader2] reads [91] from buf.
+
+[reader2] reads [91] from buf.
+
+[reader2] reads [91] from buf.
+
+[reader3] reads [91] from buf.
+
+[reader2] reads [91] from buf.
+
+[reader2] reads [91] from buf.
+
+[reader2] reads [91] from buf.
+
+[reader2] reads [91] from buf.
+
+[reader2] reads [91] from buf.
+
+[reader2] reads [91] from buf.
+
+[reader2] reads [91] from buf.
+
+[reader2] reads [91] from buf.
+
+[reader2] reads [91] from buf.
+
+[reader2] reads [91] from buf.
+
+[reader2] reads [91] from buf.
+
+[reader2] reads [91] from buf.
+
+[reader2] reads [91] from buf.
+
+[reader3] reads [91] from buf.
+
+[reader2] reads [91] from buf.
+
+[reader2] reads [91] from buf.
+
+[reader2] reads [91] from buf.
+
+[reader2] reads [91] from buf.
+
+[reader2] reads [91] from buf.
+
+[reader2] reads [91] from buf.
+
+[reader2] reads [91] from buf.
+
+[reader2] reads [91] from buf.
+
+[reader2] reads [91] from buf.
+
+[reader3] reads [91] from buf.
+
+[reader2] reads [91] from buf.
+
+[reader2] reads [91] from buf.
+
+[reader2] reads [91] from buf.
+
+[reader2] reads [91] from buf.
+
+[reader2] reads [91] from buf.
+
+[reader2] reads [91] from buf.
+
+[reader2] reads [91] from buf.
+
+[reader2] reads [91] from buf.
+
+[reader2] reads [91] from buf.
+
+[reader2] reads [91] from buf.
+
+[reader2] reads [91] from buf.
+
+[reader2] reads [91] from buf.
+
+[reader2] reads [91] from buf.
+
+[reader2] reads [91] from buf.
+
+[reader2] reads [91] from buf.
+
+[reader2] reads [91] from buf.
+
+[reader2] reads [91] from buf.
+
+[reader2] reads [91] from buf.
+
+[reader2] reads [91] from buf.
+
+[reader2] reads [91] from buf.
+
+[reader2] reads [91] from buf.
+
+[reader2] reads [91] from buf.
+
+[reader3] reads [91] from buf.
+
+[reader2] reads [91] from buf.
+
+[reader2] reads [91] from buf.
+
+[reader2] reads [91] from buf.
+
+[reader2] reads [91] from buf.
+
+[reader2] reads [91] from buf.
+
+[reader3] reads [91] from buf.
+
+----------------- semaphore test end -------------------GXemul> ^C 
+GXemul> quit

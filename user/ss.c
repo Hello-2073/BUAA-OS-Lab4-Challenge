@@ -72,7 +72,7 @@ ss_sem_post(sem_t semid)
 	Sem *psem = sems + (semid & 0x7f);
 	struct Env *e;
 	psem->value++;
-	if (psem->value <= 0) {
+	if (psem->value == 0) {
 		e = LIST_FIRST(&(psem->queue));
 		LIST_REMOVE(e, env_link);
 		// writef("%d out, %d : %d\n\n", e->env_id, semid, psem->value);

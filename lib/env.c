@@ -296,7 +296,7 @@ int env_alloc(struct Env **new, u_int parent_id, int alloc_mem)
     /* Step 4: Remove the new Env from env_free_list. */
 	LIST_REMOVE(e, env_link);
 
-	printf("new env: id %d, sp 0x%x\n\n", e->env_id, e->env_tf.regs[29]);
+	// printf("new env: id %d, sp 0x%x\n\n", e->env_id, e->env_tf.regs[29]);
 
 	*new = e;
 	return 0;
