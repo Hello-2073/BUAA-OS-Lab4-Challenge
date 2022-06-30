@@ -4,7 +4,6 @@
 #include <mmu.h>
 #include <env.h>
 
-extern struct Env *env;
 
 // Send val to whom.  This function keeps trying until
 // it succeeds.  It should panic() on any error other than
@@ -15,7 +14,9 @@ void
 ipc_send(u_int whom, u_int val, u_int srcva, u_int perm)
 {
 	int r;
+	struct Env *env = &envs[ENVX(syscall_getenvid())];
 
+	//writef("%d send %d, %d\n", env->env_id, whom, val);
 	while ((r = syscall_ipc_can_send(whom, val, srcva, perm)) == -E_IPC_NOT_RECV) {
 		syscall_yield();
 	}
@@ -35,7 +36,9 @@ u_int
 ipc_recv(u_int *whom, u_int dstva, u_int *perm)
 {
 	syscall_ipc_recv(dstva);
-
+	// writef("%d-%d\n", env->env_id, env->env_ipc_value);
+	struct Env *env = &envs[ENVX(syscall_getenvid())];
+	
 	if (whom) {
 		*whom = env->env_ipc_from;
 	}
@@ -44,6 +47,7 @@ ipc_recv(u_int *whom, u_int dstva, u_int *perm)
 		*perm = env->env_ipc_perm;
 	}
 
+	//writef("%d recv %d from %d\n", env->env_id, env->env_ipc_value, env->env_ipc_from);
 	return env->env_ipc_value;
 }
 

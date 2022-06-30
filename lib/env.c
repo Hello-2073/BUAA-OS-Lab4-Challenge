@@ -270,6 +270,7 @@ int env_alloc(struct Env **new, u_int parent_id, int alloc_mem)
 		e->env_tid = e->env_id;
 		e->env_stack_map = 1;
 		e->env_tf.regs[29] = USTACKTOP;
+		e->env_stack_lim = USTACKTOP - 2 * BY2PG;
 	} else {
 		if (envid2tenv(parent_id, &parent) < 0) {
 			panic("tid error");
@@ -280,6 +281,7 @@ int env_alloc(struct Env **new, u_int parent_id, int alloc_mem)
                 parent->env_stack_map |= 1 << i;
                 e->env_stack_map = 1 << i;
                 e->env_tf.regs[29] = USTACKTOP - 2 * i * BY2PG;
+				e->env_stack_lim = USTACKTOP - (2 * i + 2) * BY2PG;
 				break;
             }
         }
@@ -294,7 +296,7 @@ int env_alloc(struct Env **new, u_int parent_id, int alloc_mem)
     /* Step 4: Remove the new Env from env_free_list. */
 	LIST_REMOVE(e, env_link);
 
-	// printf("new env: id %d, sp 0x%x\n\n", e->env_id, e->env_tf.regs[29]);
+	printf("new env: id %d, sp 0x%x\n\n", e->env_id, e->env_tf.regs[29]);
 
 	*new = e;
 	return 0;
@@ -599,7 +601,7 @@ env_run(struct Env *e)
      *   (read <see mips run linux>, page 135-144)
      */
 
-	// printf("env_run():  id %d, pc 0x%x, sp 0x%x,  pgdir 0x%x\n\n", e->env_id, e->env_tf.pc, e->env_tf.regs[29], e->env_pgdir);
+	//printf("env_run():  id %d, pc 0x%x, sp 0x%x,  pgdir 0x%x\n\n", e->env_id, e->env_tf.pc, e->env_tf.regs[29], e->env_pgdir);
 	env_pop_tf(&(e->env_tf), GET_ENV_ASID(e->env_id));
 }
 

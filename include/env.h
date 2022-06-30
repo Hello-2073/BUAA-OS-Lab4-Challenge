@@ -48,9 +48,9 @@ struct Env {
 	// challange
 	u_int env_tid;
 	u_int env_stack_map;
+	u_int env_stack_lim;
 	u_int env_joint_id;
 	void **env_retval;
-	LIST_ENTRY(Env) env_waiting_link;
 };
 
 LIST_HEAD(Env_list, Env);

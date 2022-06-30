@@ -12,6 +12,7 @@
 
 typedef struct Sem {
     int value;
+	int shared;
     struct Env_list queue;
 	LIST_ENTRY(Sem) sem_link;
 } Sem;

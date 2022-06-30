@@ -78,3 +78,4 @@ sys_call_table:                         // Syscall Table
     .word sys_ipc_recv
     .word sys_cgetc
 	.word sys_env_join
+	.word sys_get_thread_page

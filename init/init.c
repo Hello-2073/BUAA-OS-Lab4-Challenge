@@ -21,9 +21,9 @@ void mips_init() {
 	// ENV_CREATE(user_fktest);
 	// ENV_CREATE(user_pingpong);
 
-	ENV_CREATE(user_threadtest);
-	// ENV_CREATE(user_semserv);
-	// ENV_CREATE(user_semtest);
+	//ENV_CREATE(user_threadtest);
+	ENV_CREATE(user_semserv);
+	ENV_CREATE(user_semtest);
 	
 
 	trap_init();

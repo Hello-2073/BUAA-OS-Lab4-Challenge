@@ -7,7 +7,7 @@
 void 
 serve_sem_init(u_int envid, struct Semreq_init *rq) 
 {
-	sem_t semid = ss_sem_init();
+	sem_t semid = ss_sem_init(rq->value);
 	ipc_send(envid, semid, 0, 0);
 }
 
@@ -22,13 +22,14 @@ void
 serve_sem_wait(u_int envid, struct Semreq_wait *rq)
 {
 	int r = ss_sem_wait(rq->semid, envid);
+	// writef("%d is r to %d\n\n", r, envid);
 	ipc_send(envid, r, 0, 0);
 }
 
 void
 serve_sem_trywait(u_int envid, struct Semreq_trywait *rq)
 {
-	int r = ss_sem_wait(rq->semid, envid);
+	int r = ss_sem_trywait(rq->semid, envid);
 	ipc_send(envid, r, 0, 0);
 }
 
@@ -54,7 +55,8 @@ serve()
 	for (;;) {
 		perm = 0;
 		req = ipc_recv(&whom, REQVA, &perm);
-
+		
+		// writef("receiving semreq %d from %d\n", req, whom);
 		if (!(perm & PTE_V))
 		{
 			writef("Invalid request from %08x: no argument page\n", whom);
@@ -90,6 +92,8 @@ serve()
 
 void umain()
 {
+	writef("sem_serve begin\n");
 	ss_init();
+	writef("sem_serve init success\n");
 	serve();
 }

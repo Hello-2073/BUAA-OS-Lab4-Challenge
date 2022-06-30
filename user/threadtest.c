@@ -86,5 +86,4 @@ void umain() {
 	}
 	writef("\n---------------- thread test end ------------------\n");
 	writef("umain() reach end\n");
-	while(1);
 }

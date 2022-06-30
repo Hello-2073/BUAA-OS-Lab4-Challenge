@@ -94,3 +94,11 @@ syscall_cgetc()
 {
 	return msyscall(SYS_cgetc, 0, 0, 0, 0, 0);
 }
+
+int syscall_get_thread_page()
+{
+	int r;
+	r=  msyscall(SYS_get_thread_page, 0, 0, 0, 0, 0);
+	//writef("%d\n\n\n", r);
+	return r;
+}

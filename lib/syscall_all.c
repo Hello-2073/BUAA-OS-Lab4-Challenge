@@ -186,6 +186,15 @@ int sys_mem_alloc(int sysno, u_int envid, u_int va, u_int perm)
 	return 0;
 }
 
+int sys_get_thread_page(int sysno)
+{
+	u_int va = curenv->env_stack_lim;
+	// sys_mem_alloc(sysno, curenv->env_id, va, PTE_R | PTE_V);
+	// printf("%d 0x%x\n\n\n",curenv->env_id, va);
+	return va;	
+}
+
+
 /* Overview:
  * 	Map the page of memory at 'srcva' in srcid's address space
  * at 'dstva' in dstid's address space with permission 'perm'.
@@ -323,8 +332,12 @@ int sys_set_env_status(int sysno, u_int envid, u_int status)
 		return -E_INVAL;
 	}
 
-	ret = envid2env(envid, &env, 0);
-	if (ret < 0) return ret;
+	if (envid == 0) {
+		env = curenv;
+	} else {
+		ret = envid2env(envid, &env, 0);
+		if (ret < 0) return ret;
+	}
 
 	if (env->env_status == ENV_JOINT && curenv->env_joint_id != env->env_id) {
 		return -1;
@@ -436,6 +449,7 @@ int sys_ipc_can_send(int sysno, u_int envid, u_int value, u_int srcva,
 	e->env_ipc_perm = perm;
 	e->env_ipc_recving = 0;
 	e->env_status = ENV_RUNNABLE;
+	// printf("%d - %d - %d\n", curenv->env_id, e->env_id, e->env_ipc_value);
 
 	if (srcva != 0) {
 		p = page_lookup(curenv->env_pgdir, srcva, NULL);
