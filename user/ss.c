@@ -15,74 +15,107 @@ ss_init()
 	}
 }
 
-int
-ss_sem_init(u_int value)
+static int
+semid2sem(sem_t semid, Sem **sem)
 {
-	Sem *psem;
-	if (LIST_EMPTY(&sem_free_list)) {	
-		user_panic("no free sem\n\n");
-		return 0;
+	if ((semid >> LOG2NSEM) == 0) {
+		return -EINVAL;
 	}
-	psem = LIST_FIRST(&sem_free_list);
-	LIST_REMOVE(psem, sem_link);
-	psem->value = value;
-	LIST_INIT(&((psem)->queue));
-	writef("a new semm id %d, value %d\n", (psem - sems) | (1 << 7), psem->value);
-	return (psem - sems) | (1 << 7);
+	*sem = sems + SEMX(semid);
+	return 0;
 }
 
-void 
+int
+ss_sem_init(u_int value, int shared, sem_t *semid)
+{
+	Sem *sem;
+	if (LIST_EMPTY(&sem_free_list)) {	
+		return -EINVAL;
+	}
+	sem = LIST_FIRST(&sem_free_list);
+	LIST_REMOVE(sem, sem_link);
+	sem->value = (int)value;
+	LIST_INIT(&(sem->queue));
+	// writef("a new semm id %d, value %d\n", (psem - sems) | (1 << 7), psem->value);
+	*semid = (sem - sems) | (1 << LOG2NSEM);
+	return 0;
+}
+
+int
 ss_sem_destroy(sem_t semid)
 {
-	Sem *psem = sems + (semid & 0x7f);
-	LIST_INSERT_HEAD(&sem_free_list, psem, sem_link);
+	Sem *sem;
+	int r;
+	r = semid2sem(semid, &sem);
+	if (r < 0) {
+		return r;
+	}
+	LIST_INSERT_HEAD(&sem_free_list, sem, sem_link);
+	return 0;
 }
 
 int
-ss_sem_wait(sem_t semid, u_int envid)
+ss_sem_wait(sem_t semid, u_int envid, int *value)
 {
-	Sem *psem = sems + (semid & 0x7f);
-	psem->value--;
-    if (psem->value >= 0) {
-		// writef("%d not in, %d: %d\n\n", envid, semid, psem->value);
-        return 0;
-    } else {
-		// writef("%D in, %d: %d\n\n", envid, semid, psem->value);
-		LIST_INSERT_TAIL(&(psem->queue), &envs[ENVX(envid)], env_link);
-        return -1;
-    }	
+	Sem *sem;
+	int r;
+	r = semid2sem(semid, &sem);
+	if (r < 0) {
+		return r;
+	}
+	*value = --sem->value;
+    if (sem->value < 0) {
+		LIST_INSERT_TAIL(&(sem->queue), &envs[ENVX(envid)], env_link);
+    }
+	return 0;
 }
 
 int
-ss_sem_trywait(sem_t semid, u_int envid)
+ss_sem_trywait(sem_t semid)
 {
-	Sem *psem = sems + (semid & 0x7f);
-	if (psem->value > 0) {
-		psem->value--;
+	Sem *sem;
+	int r;
+	r = semid2sem(semid, &sem);
+	if (r < 0) {
+		return r;
+	}
+	if (sem->value > 0) {
+		sem->value--;
 		return 0;
 	} else {
-		return -1;
-	}
-}
-
-void
-ss_sem_post(sem_t semid)
-{
-	//writef("post\n\n\n");
-	Sem *psem = sems + (semid & 0x7f);
-	struct Env *e;
-	psem->value++;
-	if (psem->value == 0) {
-		e = LIST_FIRST(&(psem->queue));
-		LIST_REMOVE(e, env_link);
-		// writef("%d out, %d : %d\n\n", e->env_id, semid, psem->value);
-		e->env_status = ENV_RUNNABLE;
+		return -EAGAIN;
 	}
 }
 
 int
-ss_sem_getvalue(sem_t semid)
+ss_sem_post(sem_t semid)
 {
-	return sems[semid & 0x7f].value;
+	Sem *sem;
+	int r;
+	r = semid2sem(semid, &sem);
+	if (r < 0) {
+		return r;
+	}
+	struct Env *e;
+	sem->value++;
+	if (sem->value == 0) {
+		e = LIST_FIRST(&(sem->queue));
+		LIST_REMOVE(e, env_link);
+		// writef("%d out, %d : %d\n\n", e->env_id, semid, psem->value);
+		ipc_send(e->env_id, 0, 0, 0);
+	}
+	return 0;
 }
 
+int
+ss_sem_getvalue(sem_t semid, int *value)
+{
+	Sem *sem;
+	int r;
+	r = semid2sem(semid, &sem);
+	if (r < 0) {
+		return r;
+	}
+	*value = sem->value;
+	return 0;
+}

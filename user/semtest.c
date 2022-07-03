@@ -3,7 +3,7 @@
 #include "sem.h"
 #include <env.h>
 
-sem_t mutex_rn, mutex_rw, mutex_io, mutex_zero;
+sem_t mutex_rn, mutex_rw, mutex_io, mutex_zero, mutex_uninit;
 int rn = 0;
 char buf[100] = {'\0'};
 
@@ -34,14 +34,17 @@ void reader(char name[])
 			sem_wait(&mutex_rw);
 		rn++;
 		sem_post(&mutex_rn);
+
 		sem_wait(&mutex_io);
 		writef("[%s] reads [%s] from buf.\n", name, buf);
 		sem_post(&mutex_io);
+
 		sem_wait(&mutex_rn);
 		rn--;
 		if (rn == 0)
 			sem_post(&mutex_rw);
 		sem_post(&mutex_rn);
+
 		if (sem_trywait(&mutex_zero) == 0) {
             break;
         }
@@ -54,6 +57,11 @@ void umain()
 {
 	writef("---------------- semaphore test begin ------------------");
 	pthread_t thread1, thread2, thread3;
+
+ 	if (sem_destroy(&mutex_uninit) < 0) {
+        writef("Semaphore not init!\n");
+    }
+
 	sem_init(&mutex_rw, 0, 1);
 	sem_init(&mutex_rn, 0, 1);
 	sem_init(&mutex_io, 0, 1);

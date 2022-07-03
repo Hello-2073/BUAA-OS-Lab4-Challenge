@@ -3,6 +3,9 @@
 
 #include <env.h>
 
+#define EINVAL 1
+#define EAGAIN 2 
+
 #define SEMREQ_INIT     1
 #define SEMREQ_DESTROY  2
 #define SEMREQ_WAIT     3
@@ -17,14 +20,16 @@ typedef struct Sem {
 	LIST_ENTRY(Sem) sem_link;
 } Sem;
 
-LIST_HEAD(Sem_list, Sem);
-
 typedef u_int sem_t;
+
+LIST_HEAD(Sem_list, Sem);
 
 struct Semreq_init
 {
     int pshared;
     u_int value;
+	
+	sem_t semid;
 };
 
 struct Semreq_destroy
@@ -35,11 +40,13 @@ struct Semreq_destroy
 struct Semreq_wait
 {
     sem_t semid;
+	int value;
 };
 
 struct Semreq_trywait
 {
     sem_t semid;
+	int value;
 };
 
 struct Semreq_post
@@ -50,6 +57,8 @@ struct Semreq_post
 struct Semreq_getvalue
 {
     sem_t semid;
+	
+	u_int value;
 };
 
 #endif

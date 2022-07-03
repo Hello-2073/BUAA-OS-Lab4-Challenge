@@ -16,8 +16,9 @@ sem_init(sem_t *sem, int pshared, u_int value)
 	struct Semreq_init *req = (struct Semreq_init *)syscall_get_thread_page();
 	req->pshared = pshared;
 	req->value = value;
-	*sem = semipc(SEMREQ_INIT, req, 0, 0);
-	return sem ? 0 : -1;
+	int r = semipc(SEMREQ_INIT, req, 0, 0);
+	*sem = req->semid;
+	return r;
 }
 
 int 
@@ -33,13 +34,7 @@ sem_wait(sem_t *sem)
 {
 	struct Semreq_wait *req = (struct Semreq_wait *)syscall_get_thread_page();
 	req->semid = *sem;
-	int r;	
-	r = semipc(SEMREQ_WAIT, req, 0, 0);
-	if (r < 0) {
-		syscall_set_env_status(0, ENV_NOT_RUNNABLE);
-		syscall_yield();
-    }
-    return 0;
+	return semipc(SEMREQ_WAIT, req, 0, 0);
 }
 
 int sem_trywait(sem_t *sem)
@@ -56,9 +51,11 @@ int sem_post(sem_t *sem)
     return semipc(SEMREQ_POST, req, 0, 0);
 }
 
-int sem_getvalue(sem_t *sem)
+int sem_getvalue(sem_t *sem, int *sval)
 {
 	struct Semreq_getvalue *req = (struct Semreq_getvalue *)syscall_get_thread_page();
     req->semid = *sem;
-    return semipc(SEMREQ_GETVALUE, req, 0, 0);
+    int r = semipc(SEMREQ_GETVALUE, req, 0, 0);
+	*sval = req->value;
+	return 0;
 }
